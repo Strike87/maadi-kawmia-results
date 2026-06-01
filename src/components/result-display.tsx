@@ -120,7 +120,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const totalColor = gradeColor(totals.totalPct, adv);
   const totalTc = thresholdClass(totals.totalPct, adv);
   const totalColors = thresholdColors[totalTc];
-  const gradeText = data.clLabel || GRADE_MAP[data.cl] || data.cl;
+  const gradeText = data.clLabel || GRADE_MAP[data.cl.replace(/@+$/, '')] || data.cl;
 
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
