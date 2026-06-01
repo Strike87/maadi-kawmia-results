@@ -59,7 +59,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   useEffect(() => {
     async function fetchTerms() {
       try {
-        const res = await fetch('/api/results', {
+        const res = await fetch('/api', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'getTermNames' }),
@@ -132,7 +132,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     try {
       const actualSheetName = resolveSheetName(selectedGrade, activeSheets);
 
-      const res = await fetch('/api/results', {
+      const res = await fetch('/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
