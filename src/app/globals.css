@@ -136,6 +136,18 @@
   background: oklch(0.5 0 0 / 50%);
 }
 
+/* RTL Select dropdown positioning - align from right side */
+[dir="rtl"] [data-radix-popper-content-wrapper] {
+  direction: rtl;
+  /* In RTL, the dropdown should align its right edge with the trigger's right edge */
+  inset-inline-start: auto !important;
+}
+
+/* Ensure Select content aligns right in RTL */
+[dir="rtl"] [data-radix-select-content] {
+  direction: rtl;
+}
+
 /* Print styles */
 @media print {
   .no-print {
