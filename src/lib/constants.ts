@@ -1,3 +1,7 @@
+// =====================================================
+// Grade & Stage Definitions
+// =====================================================
+
 export const GRADE_MAP: Record<string, string> = {
   '1': 'الصف الأول الابتدائي',
   '2': 'الصف الثاني الابتدائي',
@@ -46,6 +50,10 @@ export const STAGE_GRADES: Record<string, { label: string; grades: GradeOption[]
   },
 };
 
+// =====================================================
+// Absence & Exclusion Lists
+// =====================================================
+
 export const ABSENCE_CODES = new Set([
   'غ', 'م', 'غائب', 'معذور', '-', 'N/A', '', '—',
 ]);
@@ -66,8 +74,22 @@ export const EXCLUDED_SUBJECTS = [
 
 export const ADVANCED_STAGE_KEYS = new Set(['7', '8', '10', '11S', '11A']);
 
+// =====================================================
+// API Configuration
+// =====================================================
+
 export const API_URL =
   'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
+
+// Whether Turnstile captcha is configured (has a real site key)
+export const CAPTCHA_ENABLED =
+  typeof window !== 'undefined' &&
+  !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here';
+
+// =====================================================
+// Type Definitions
+// =====================================================
 
 export interface StudentResult {
   termName: string;
@@ -103,6 +125,15 @@ export interface ComputedTotals {
   totalPct: number;
 }
 
+// =====================================================
+// Utility Functions
+// =====================================================
+
+/** Strip trailing @ signs from grade / sheet names (e.g. "7@" → "7") */
+export function stripAt(val: string): string {
+  return String(val || '').replace(/@+$/, '');
+}
+
 export function normalizeArabic(str: string): string {
   return String(str || '')
     .replace(/[أإآ]/g, 'ا')
@@ -124,8 +155,9 @@ export function isAbsenceCode(value: string): boolean {
 }
 
 export function usesAdvancedScale(data: StudentResult): boolean {
-  const clBase = (data?.cl || '').replace(/@+$/, '');
-  return [clBase, data?.clLabel]
+  // Strip @ from cl before checking
+  const clClean = stripAt(data?.cl || '');
+  return [clClean, data?.clLabel]
     .map(normalizeArabic)
     .some(
       (v) =>
@@ -221,13 +253,15 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
   const mark = bold ? '*' : '';
   const totals = computeTotals(data);
   const adv = usesAdvancedScale(data);
+  // Strip @ from cl for grade label lookup
+  const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
 
   const lines = [
     `${mark}نتيجة امتحانات مدرسة حدائق المعادي القومية${mark}`,
     '─────────────────',
     `الفترة: ${data.termName || ''}`,
     `الطالب: ${mark}${data.stn}${mark}`,
-    `الصف: ${data.clLabel || GRADE_MAP[data.cl.replace(/@+$/, '')] || data.cl}`,
+    `الصف: ${gradeText}`,
     '─────────────────',
   ];
 
@@ -254,19 +288,27 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
   return lines;
 }
 
+/**
+ * Check if a grade is active based on the active sheets list.
+ * Handles @ suffix in sheet names (e.g. "7@" matches grade "7").
+ */
 export function isGradeActive(
   gradeVal: string,
   activeSheets: string[]
 ): boolean {
   if (!activeSheets?.length) return true;
+  const fullName = GRADE_MAP[gradeVal] || '';
   return activeSheets.some((sheetName) => {
     const s = sheetName.trim();
+    // Skip non-grade sheets
     if (s === 'template' || s === 'RateLimitLog' || s === 'Settings') return false;
-    const sBase = s.replace(/@+$/, '');
-    if (s === gradeVal || sBase === gradeVal) return true;
-    const fullName = GRADE_MAP[gradeVal] || '';
+    // Direct match
+    if (s === gradeVal) return true;
+    // Match with @ stripped (e.g. "7@" matches "7")
+    if (stripAt(s) === gradeVal) return true;
+    // Match by Arabic label name
     if (fullName) {
-      const sNorm = normalizeArabic(sBase);
+      const sNorm = normalizeArabic(s);
       const fNorm = normalizeArabic(fullName);
       if (fNorm && sNorm === fNorm) return true;
     }
@@ -274,21 +316,27 @@ export function isGradeActive(
   });
 }
 
-export function resolveSheetName(
-  gradeVal: string,
-  activeSheets: string[]
-): string {
+/**
+ * Resolve a grade value to the actual sheet name in the spreadsheet.
+ * If the grade "7" has a sheet named "7@", this returns "7@".
+ * If no @ version exists, returns the grade value as-is.
+ */
+export function resolveSheetName(gradeVal: string, activeSheets: string[]): string {
   if (!activeSheets?.length) return gradeVal;
+  // Direct match first
   if (activeSheets.includes(gradeVal)) return gradeVal;
+  // Try with @ suffix
   const withAt = gradeVal + '@';
   if (activeSheets.includes(withAt)) return withAt;
+  // Try matching by Arabic label
   const fullName = GRADE_MAP[gradeVal] || '';
   if (fullName) {
     const fNorm = normalizeArabic(fullName);
-    for (const s of activeSheets) {
-      const sBase = s.replace(/@+$/, '');
-      if (normalizeArabic(sBase) === fNorm) return s;
-    }
+    const match = activeSheets.find((s) => {
+      const sNorm = normalizeArabic(s.trim());
+      return sNorm === fNorm;
+    });
+    if (match) return match.trim();
   }
   return gradeVal;
 }
