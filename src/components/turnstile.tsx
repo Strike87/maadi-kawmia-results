@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-// Cloudflare Turnstile test keys
-// Visible: 1x00000000000000000000AA (shows widget, always passes)
-// Invisible: 1x00000000000000000000BB (invisible, always passes)
+// Cloudflare Turnstile test keys from https://developers.cloudflare.com/turnstile/troubleshooting/testing/
 const TURNSTILE_SITE_KEY =
   (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here')
     ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-    : '1x00000000000000000000AA'; // Visible test key
+    : '1x00000000000000000000AA'; // Visible always-passes test key
 
 interface TurnstileProps {
   onVerify: (token: string) => void;
@@ -19,18 +17,19 @@ interface TurnstileProps {
 export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const verifiedRef = useRef(false);
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  // Keep callbacks in refs
   useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
   useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
-  // Wait for Turnstile script to be available
   useEffect(() => {
-    const checkAndRender = () => {
-      if (!containerRef.current) return;
+    let intervalId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout;
+
+    const renderWidget = () => {
+      if (!containerRef.current || verifiedRef.current) return;
       if (!window.turnstile) return;
 
       // Clear any existing widget
@@ -39,44 +38,78 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       try {
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: TURNSTILE_SITE_KEY,
-          callback: (token: string) => onVerifyRef.current(token),
-          'expired-callback': () => onExpireRef.current(),
+          callback: (token: string) => {
+            if (!verifiedRef.current) {
+              verifiedRef.current = true;
+              onVerifyRef.current(token);
+            }
+          },
+          'expired-callback': () => {
+            verifiedRef.current = false;
+            onExpireRef.current();
+          },
           theme: 'light',
           size: 'normal',
         });
       } catch (e) {
         console.error('Turnstile render error:', e);
-        // Fallback: auto-verify so the form still works
-        onVerifyRef.current('test-token-fallback');
+        if (!verifiedRef.current) {
+          verifiedRef.current = true;
+          onVerifyRef.current('fallback-token');
+        }
+        return;
       }
+
+      // Poll for the token - Turnstile sometimes renders the token
+      // in a hidden input without calling the callback
+      let pollCount = 0;
+      intervalId = setInterval(() => {
+        if (verifiedRef.current) {
+          clearInterval(intervalId);
+          return;
+        }
+        pollCount++;
+        const hiddenInput = containerRef.current?.querySelector(
+          'input[name="cf-turnstile-response"]'
+        ) as HTMLInputElement | null;
+        if (hiddenInput && hiddenInput.value && hiddenInput.value.length > 10) {
+          verifiedRef.current = true;
+          onVerifyRef.current(hiddenInput.value);
+          clearInterval(intervalId);
+        }
+        if (pollCount > 30) {
+          // 6 seconds - give up polling
+          clearInterval(intervalId);
+        }
+      }, 200);
     };
 
     // If turnstile is already loaded, render immediately
     if (window.turnstile) {
-      checkAndRender();
-      return;
+      renderWidget();
+    } else {
+      // Wait for the script to load
+      const loadInterval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(loadInterval);
+          renderWidget();
+        }
+      }, 300);
+
+      // Timeout fallback
+      timeoutId = setTimeout(() => {
+        clearInterval(loadInterval);
+        if (!verifiedRef.current) {
+          console.warn('Turnstile failed to load, auto-verifying');
+          verifiedRef.current = true;
+          onVerifyRef.current('fallback-token');
+        }
+      }, 10000);
     }
 
-    // Wait for the script to load (it's loaded via <head> in layout.tsx)
-    const interval = setInterval(() => {
-      if (window.turnstile) {
-        clearInterval(interval);
-        checkAndRender();
-      }
-    }, 300);
-
-    // Timeout after 10 seconds - auto-verify as fallback
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      if (!window.turnstile) {
-        console.warn('Turnstile script failed to load, auto-verifying');
-        onVerifyRef.current('test-token-fallback');
-      }
-    }, 10000);
-
     return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -85,7 +118,6 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   );
 }
 
-// Extend window type for Turnstile
 declare global {
   interface Window {
     turnstile: {
