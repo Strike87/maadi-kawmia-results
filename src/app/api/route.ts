@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyNmK52XP0Ogl_x7JcgUAuZRDXyfXOdKNC4Rb42qusKBAjAMR1phQOpJQQpenpGCAAThQ/exec';
-const API_KEY = 'mk-results-2026-secure-key'; // ← نفس المفتاح في Google Apps Script
+const API_KEY = 'mk-results-2026-secure-key-x9z7w4'; // ← نفس المفتاح في Google Apps Script
 
 export async function POST(request: NextRequest) {
   try {
