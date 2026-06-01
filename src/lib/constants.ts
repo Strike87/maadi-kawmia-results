@@ -79,7 +79,7 @@ export const ADVANCED_STAGE_KEYS = new Set(['7', '8', '10', '11S', '11A']);
 // =====================================================
 
 export const API_URL =
-  'https://script.google.com/macros/s/AKfycbxPL1cx3w-T_A-1u2xui0Nu9T9QJlJH2j_LgDP7qeorEtZ5sHg7PjiL287MbjLrlUAk-Q/exec';
+  'https://script.google.com/macros/s/AKfycbyNmK52XP0Ogl_x7JcgUAuZRDXyfXOdKNC4Rb42qusKBAjAMR1phQOpJQQpenpGCAAThQ/exec';
 
 // =====================================================
 // Type Definitions
