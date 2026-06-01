@@ -32,6 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+      </head>
       <body
         className={`${cairo.variable} font-[family-name:var(--font-cairo)] antialiased bg-background text-foreground`}
       >
