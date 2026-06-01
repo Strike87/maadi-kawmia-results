@@ -3,12 +3,47 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_URL =
   'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
 
+// ← نفس المفتاح في Google Apps Script setupProperties
 const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
+
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
+
+async function verifyTurnstile(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET_KEY) {
+    // In development without a secret key, skip verification
+    console.warn('TURNSTILE_SECRET_KEY not set — skipping captcha verification');
+    return true;
+  }
+
+  try {
+    const res = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          secret: TURNSTILE_SECRET_KEY,
+          response: token,
+        }),
+      }
+    );
+
+    const data = await res.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('Turnstile verification error:', error);
+    return false;
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({ message: 'Hello, world!' });
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, termName, cls, roll } = body;
+    const { action, termName, cls, roll, captchaToken } = body;
 
     if (action === 'getTermNames') {
       const res = await fetch(API_URL, {
@@ -30,6 +65,22 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: 'يرجى ملء جميع الحقول المطلوبة.' },
           { status: 400 }
+        );
+      }
+
+      // Verify Turnstile captcha
+      if (captchaToken) {
+        const isValid = await verifyTurnstile(captchaToken);
+        if (!isValid) {
+          return NextResponse.json(
+            { error: 'فشل التحقق من الكابتشا. يرجى المحاولة مرة أخرى.' },
+            { status: 403 }
+          );
+        }
+      } else if (TURNSTILE_SECRET_KEY) {
+        return NextResponse.json(
+          { error: 'يرجى إكمال التحقق من الكابتشا.' },
+          { status: 403 }
         );
       }
 
