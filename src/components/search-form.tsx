@@ -34,6 +34,7 @@ import {
   GRADE_MAP,
   normalizeId,
   isGradeActive,
+  resolveSheetName,
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
@@ -134,13 +135,16 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     onLoading(true);
 
     try {
+      // Resolve the actual sheet name (e.g. "7" → "7@") so the backend can find it
+      const actualSheetName = resolveSheetName(selectedGrade, activeSheets);
+
       const res = await fetch('/api/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'getStudentData',
           termName: selectedTerm,
-          cls: selectedGrade,
+          cls: actualSheetName,
           roll: nationalId,
         }),
       });
