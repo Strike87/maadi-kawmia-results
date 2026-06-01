@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
-const API_KEY = 'mk-results-2026-secure-key-x9z7w4'; // ← نفس المفتاح في Google Apps Script
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
+
+// ← نفس المفتاح في Google Apps Script setupProperties
+const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,15 +17,23 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getTermNames' }),
       });
-      if (!res.ok) throw new Error(`Google API error: ${res.status}`);
+
+      if (!res.ok) {
+        throw new Error(`Google API error: ${res.status}`);
+      }
+
       const data = await res.json();
       return NextResponse.json(data);
     }
 
     if (action === 'getStudentData') {
       if (!termName || !cls || !roll) {
-        return NextResponse.json({ error: 'يرجى ملء جميع الحقول المطلوبة.' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'يرجى ملء جميع الحقول المطلوبة.' },
+          { status: 400 }
+        );
       }
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -31,10 +42,14 @@ export async function POST(request: NextRequest) {
           termName,
           cls,
           roll,
-          apiKey: API_KEY,  // ← أضف هذا
+          apiKey: API_KEY,
         }),
       });
-      if (!res.ok) throw new Error(`Google API error: ${res.status}`);
+
+      if (!res.ok) {
+        throw new Error(`Google API error: ${res.status}`);
+      }
+
       const data = await res.json();
       return NextResponse.json(data);
     }
