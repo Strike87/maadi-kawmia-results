@@ -38,6 +38,7 @@ import {
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
+import { Turnstile } from '@/components/turnstile';
 
 interface SearchFormProps {
   onResult: (data: StudentResult) => void;
@@ -55,7 +56,15 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [warning, setWarning] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [termsLoaded, setTermsLoaded] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
+  // Check if Turnstile is configured with a real site key
+  const captchaEnabled =
+    typeof window !== 'undefined' &&
+    !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here';
+
+  // Fetch terms on mount
   useEffect(() => {
     async function fetchTerms() {
       try {
@@ -82,12 +91,14 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     fetchTerms();
   }, []);
 
+  // Auto-select term if only one
   useEffect(() => {
     if (terms.length === 1 && !selectedTerm) {
       setSelectedTerm(terms[0]);
     }
   }, [terms, selectedTerm]);
 
+  // Get available stages
   const getAvailableStages = useCallback(() => {
     if (!activeSheets.length) return STAGE_GRADES;
     const filtered: Record<string, { label: string; grades: { value: string; label: string }[] }> = {};
@@ -103,12 +114,14 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const availableStages = getAvailableStages();
   const currentStageGrades = selectedStage ? availableStages[selectedStage]?.grades || [] : [];
 
+  // Handle national ID input
   const handleIdChange = (value: string) => {
     const cleaned = normalizeId(value);
     setNationalId(cleaned);
     setError('');
   };
 
+  // Handle search
   const handleSearch = async () => {
     setError('');
     setWarning('');
@@ -126,11 +139,18 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
       return;
     }
 
+    // Require captcha only if it's configured
+    if (captchaEnabled && !captchaToken) {
+      setError('يرجى إكمال التحقق الأمني أولاً.');
+      return;
+    }
+
     setIsLoading(true);
     onLoading(true);
 
     try {
-      const actualSheetName = resolveSheetName(selectedGrade, activeSheets);
+      // Resolve the actual sheet name (e.g. "7" → "7@")
+      const resolvedGrade = resolveSheetName(selectedGrade, activeSheets);
 
       const res = await fetch('/api', {
         method: 'POST',
@@ -138,8 +158,9 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
         body: JSON.stringify({
           action: 'getStudentData',
           termName: selectedTerm,
-          cls: actualSheetName,
+          cls: resolvedGrade,
           roll: nationalId,
+          captchaToken: captchaToken || undefined,
         }),
       });
 
@@ -156,11 +177,16 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     } finally {
       setIsLoading(false);
       onLoading(false);
+      setCaptchaToken(null);
+      if (window.turnstile) {
+        try { window.turnstile.reset(); } catch {}
+      }
     }
   };
 
   const idLength = nationalId.length;
   const isIdComplete = idLength === 14;
+  const canSearch = isIdComplete && !!selectedGrade && !!selectedTerm && (captchaEnabled ? !!captchaToken : true);
 
   return (
     <motion.div
@@ -176,6 +202,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Warning Alert */}
           <AnimatePresence>
             {warning && (
               <motion.div
@@ -193,6 +220,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
+          {/* Error Alert */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -210,6 +238,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
+          {/* Term Select */}
           <div className="space-y-2">
             <Label htmlFor="term" className="text-sm font-bold flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
@@ -228,7 +257,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="term" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر الفترة الدراسية --" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
                 {terms.map((term) => (
                   <SelectItem key={term} value={term} className="text-base">
                     {term}
@@ -238,6 +267,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </Select>
           </div>
 
+          {/* Stage Select */}
           <div className="space-y-2">
             <Label htmlFor="stage" className="text-sm font-bold flex items-center gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 text-primary" />
@@ -255,7 +285,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="stage" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر المرحلة الدراسية --" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
                 {Object.entries(availableStages).map(([key, stage]) => (
                   <SelectItem key={key} value={key} className="text-base">
                     {stage.label}
@@ -265,6 +295,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </Select>
           </div>
 
+          {/* Grade Select */}
           <div className="space-y-2">
             <Label htmlFor="grade" className="text-sm font-bold flex items-center gap-1.5">
               <ChevronDown className="h-3.5 w-3.5 text-primary" />
@@ -285,7 +316,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                     : '-- اختر المرحلة الدراسية أولاً --'
                 } />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
                 {currentStageGrades.map((grade) => (
                   <SelectItem key={grade.value} value={grade.value} className="text-base">
                     {grade.label}
@@ -300,6 +331,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </div>
 
+          {/* National ID Input */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="nationalId" className="text-sm font-bold flex items-center gap-1.5">
@@ -329,7 +361,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               value={nationalId}
               onChange={(e) => handleIdChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLoading) handleSearch();
+                if (e.key === 'Enter' && !isLoading && canSearch) handleSearch();
               }}
               className={`h-12 text-base text-left font-mono tracking-wider ${
                 idLength > 0 && !isIdComplete
@@ -350,9 +382,18 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </div>
 
+          {/* Turnstile Captcha - only shows if configured */}
+          {captchaEnabled && (
+            <Turnstile
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+            />
+          )}
+
+          {/* Submit Button */}
           <Button
             onClick={handleSearch}
-            disabled={isLoading || !isIdComplete || !selectedGrade || !selectedTerm}
+            disabled={isLoading || !canSearch}
             className="w-full h-13 text-base font-bold gap-2 rounded-xl bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-60 disabled:shadow-none"
             size="lg"
           >
@@ -369,6 +410,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </Button>
 
+          {/* Security Note */}
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <Shield className="h-3 w-3" />
             <span className="font-semibold">بياناتك محمية ولا يتم تخزينها</span>
