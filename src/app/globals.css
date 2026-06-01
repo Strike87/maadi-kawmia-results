@@ -146,6 +146,20 @@
   direction: rtl;
 }
 
+/* Force dropdown to align right edge with trigger right edge in RTL */
+[dir="rtl"] [data-radix-popper-content-wrapper][data-side="bottom"],
+[dir="rtl"] [data-radix-popper-content-wrapper][data-side="top"] {
+  inset-inline-start: auto !important;
+  right: auto;
+  /* Use CSS to reposition - align right edge of dropdown with trigger */
+}
+
+/* RTL SelectContent with popper position - align from right */
+[dir="rtl"] .rtl-select-right [data-radix-popper-content-wrapper] {
+  right: 0 !important;
+  left: auto !important;
+}
+
 /* Print styles */
 @media print {
   .no-print {
