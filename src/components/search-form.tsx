@@ -250,7 +250,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="term" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر الفترة الدراسية --" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
                 {terms.map((term) => (
                   <SelectItem key={term} value={term} className="text-base">
                     {term}
@@ -278,7 +278,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="stage" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر المرحلة الدراسية --" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
                 {Object.entries(availableStages).map(([key, stage]) => (
                   <SelectItem key={key} value={key} className="text-base">
                     {stage.label}
@@ -309,7 +309,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                     : '-- اختر المرحلة الدراسية أولاً --'
                 } />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
                 {currentStageGrades.map((grade) => (
                   <SelectItem key={grade.value} value={grade.value} className="text-base">
                     {grade.label}
