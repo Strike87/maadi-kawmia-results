@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_URL =
   'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
 
-// ← نفس المفتاح في Google Apps Script setupProperties
 const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
 
 export async function POST(request: NextRequest) {
