@@ -28,6 +28,7 @@ import {
   isAbsenceCode,
   buildShareLines,
   GRADE_MAP,
+  stripAt,
 } from '@/lib/constants';
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -120,7 +121,9 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const totalColor = gradeColor(totals.totalPct, adv);
   const totalTc = thresholdClass(totals.totalPct, adv);
   const totalColors = thresholdColors[totalTc];
-const gradeText = data.clLabel || GRADE_MAP[data.cl.replace(/@+$/, '')] || data.cl;
+  // Strip @ from cl for grade label lookup
+  const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
+
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
     try {
