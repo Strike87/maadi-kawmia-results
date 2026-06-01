@@ -58,12 +58,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [termsLoaded, setTermsLoaded] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-  // Check if Turnstile is configured with a real site key
-  const captchaEnabled =
-    typeof window !== 'undefined' &&
-    !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here';
-
   // Fetch terms on mount
   useEffect(() => {
     async function fetchTerms() {
@@ -139,8 +133,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
       return;
     }
 
-    // Require captcha only if it's configured
-    if (captchaEnabled && !captchaToken) {
+    if (!captchaToken) {
       setError('يرجى إكمال التحقق الأمني أولاً.');
       return;
     }
@@ -186,7 +179,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
 
   const idLength = nationalId.length;
   const isIdComplete = idLength === 14;
-  const canSearch = isIdComplete && !!selectedGrade && !!selectedTerm && (captchaEnabled ? !!captchaToken : true);
+  const canSearch = isIdComplete && !!selectedGrade && !!selectedTerm && !!captchaToken;
 
   return (
     <motion.div
@@ -257,7 +250,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="term" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر الفترة الدراسية --" />
               </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
+              <SelectContent>
                 {terms.map((term) => (
                   <SelectItem key={term} value={term} className="text-base">
                     {term}
@@ -285,7 +278,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <SelectTrigger id="stage" className="w-full h-12 text-base">
                 <SelectValue placeholder="-- اختر المرحلة الدراسية --" />
               </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
+              <SelectContent>
                 {Object.entries(availableStages).map(([key, stage]) => (
                   <SelectItem key={key} value={key} className="text-base">
                     {stage.label}
@@ -316,7 +309,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                     : '-- اختر المرحلة الدراسية أولاً --'
                 } />
               </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
+              <SelectContent>
                 {currentStageGrades.map((grade) => (
                   <SelectItem key={grade.value} value={grade.value} className="text-base">
                     {grade.label}
@@ -382,13 +375,11 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </div>
 
-          {/* Turnstile Captcha - only shows if configured */}
-          {captchaEnabled && (
-            <Turnstile
-              onVerify={(token) => setCaptchaToken(token)}
-              onExpire={() => setCaptchaToken(null)}
-            />
-          )}
+          {/* Turnstile Captcha */}
+          <Turnstile
+            onVerify={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+          />
 
           {/* Submit Button */}
           <Button
