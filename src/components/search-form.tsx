@@ -56,7 +56,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [termsLoaded, setTermsLoaded] = useState(false);
 
-  // Fetch terms on mount
   useEffect(() => {
     async function fetchTerms() {
       try {
@@ -83,14 +82,12 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     fetchTerms();
   }, []);
 
-  // Auto-select term if only one
   useEffect(() => {
     if (terms.length === 1 && !selectedTerm) {
       setSelectedTerm(terms[0]);
     }
   }, [terms, selectedTerm]);
 
-  // Get available stages
   const getAvailableStages = useCallback(() => {
     if (!activeSheets.length) return STAGE_GRADES;
     const filtered: Record<string, { label: string; grades: { value: string; label: string }[] }> = {};
@@ -106,14 +103,12 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const availableStages = getAvailableStages();
   const currentStageGrades = selectedStage ? availableStages[selectedStage]?.grades || [] : [];
 
-  // Handle national ID input
   const handleIdChange = (value: string) => {
     const cleaned = normalizeId(value);
     setNationalId(cleaned);
     setError('');
   };
 
-  // Handle search
   const handleSearch = async () => {
     setError('');
     setWarning('');
@@ -135,7 +130,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     onLoading(true);
 
     try {
-      // Resolve the actual sheet name (e.g. "7" → "7@") so the backend can find it
       const actualSheetName = resolveSheetName(selectedGrade, activeSheets);
 
       const res = await fetch('/api/results', {
@@ -182,7 +176,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Warning Alert */}
           <AnimatePresence>
             {warning && (
               <motion.div
@@ -200,7 +193,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
-          {/* Error Alert */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -218,7 +210,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
-          {/* Term Select */}
           <div className="space-y-2">
             <Label htmlFor="term" className="text-sm font-bold flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
@@ -247,7 +238,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </Select>
           </div>
 
-          {/* Stage Select */}
           <div className="space-y-2">
             <Label htmlFor="stage" className="text-sm font-bold flex items-center gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 text-primary" />
@@ -275,7 +265,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </Select>
           </div>
 
-          {/* Grade Select */}
           <div className="space-y-2">
             <Label htmlFor="grade" className="text-sm font-bold flex items-center gap-1.5">
               <ChevronDown className="h-3.5 w-3.5 text-primary" />
@@ -311,7 +300,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </div>
 
-          {/* National ID Input */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="nationalId" className="text-sm font-bold flex items-center gap-1.5">
@@ -362,7 +350,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </div>
 
-          {/* Submit Button */}
           <Button
             onClick={handleSearch}
             disabled={isLoading || !isIdComplete || !selectedGrade || !selectedTerm}
@@ -382,7 +369,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </Button>
 
-          {/* Security Note */}
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <Shield className="h-3 w-3" />
             <span className="font-semibold">بياناتك محمية ولا يتم تخزينها</span>
