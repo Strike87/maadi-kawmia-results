@@ -79,7 +79,7 @@ export const ADVANCED_STAGE_KEYS = new Set(['7', '8', '10', '11S', '11A']);
 // =====================================================
 
 export const API_URL =
-  'https://script.google.com/macros/s/AKfycbyNmK52XP0Ogl_x7JcgUAuZRDXyfXOdKNC4Rb42qusKBAjAMR1phQOpJQQpenpGCAAThQ/exec';
+  'https://script.google.com/macros/s/AKfycbxPL1cx3w-T_A-1u2xui0Nu9T9QJlJH2j_LgDP7qeorEtZ5sHg7PjiL287MbjLrlUAk-Q/exec';
 
 // =====================================================
 // Type Definitions
@@ -144,7 +144,9 @@ export function isAbsenceCode(value: string): boolean {
 }
 
 export function usesAdvancedScale(data: StudentResult): boolean {
-  return [data?.cl, data?.clLabel]
+  // Strip @ suffix from cl for matching (e.g. "7@" → "7")
+  const clBase = (data?.cl || '').replace(/@+$/, '');
+  return [clBase, data?.clLabel]
     .map(normalizeArabic)
     .some(
       (v) =>
@@ -246,7 +248,7 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
     '─────────────────',
     `الفترة: ${data.termName || ''}`,
     `الطالب: ${mark}${data.stn}${mark}`,
-    `الصف: ${data.clLabel || GRADE_MAP[data.cl] || data.cl}`,
+    `الصف: ${data.clLabel || GRADE_MAP[data.cl.replace(/@+$/, '')] || data.cl}`,
     '─────────────────',
   ];
 
@@ -278,11 +280,50 @@ export function isGradeActive(
   activeSheets: string[]
 ): boolean {
   if (!activeSheets?.length) return true;
-  const fullName = GRADE_MAP[gradeVal] || '';
   return activeSheets.some((sheetName) => {
     const s = sheetName.trim();
-    const sNorm = normalizeArabic(s);
-    const fNorm = normalizeArabic(fullName);
-    return s === gradeVal || (fNorm && sNorm === fNorm);
+    // Skip non-grade sheets
+    if (s === 'template' || s === 'RateLimitLog' || s === 'Settings') return false;
+    // Strip trailing @ for matching (e.g. "7@" → "7", "11S@" → "11S")
+    const sBase = s.replace(/@+$/, '');
+    // Direct match: sheet name equals grade value (with or without @)
+    if (s === gradeVal || sBase === gradeVal) return true;
+    // Fallback: match by Arabic label name
+    const fullName = GRADE_MAP[gradeVal] || '';
+    if (fullName) {
+      const sNorm = normalizeArabic(sBase);
+      const fNorm = normalizeArabic(fullName);
+      if (fNorm && sNorm === fNorm) return true;
+    }
+    return false;
   });
+}
+
+/**
+ * Given a grade key (e.g. "7") and the activeSheets list,
+ * find the actual sheet name in the spreadsheet (e.g. "7@").
+ * This is needed because the user renamed sheets with @ suffix
+ * to hide them, so the API must send the full sheet name.
+ */
+export function resolveSheetName(
+  gradeVal: string,
+  activeSheets: string[]
+): string {
+  if (!activeSheets?.length) return gradeVal;
+  // First try exact match
+  if (activeSheets.includes(gradeVal)) return gradeVal;
+  // Then try with @ suffix
+  const withAt = gradeVal + '@';
+  if (activeSheets.includes(withAt)) return withAt;
+  // Also try Arabic label match
+  const fullName = GRADE_MAP[gradeVal] || '';
+  if (fullName) {
+    const fNorm = normalizeArabic(fullName);
+    for (const s of activeSheets) {
+      const sBase = s.replace(/@+$/, '');
+      if (normalizeArabic(sBase) === fNorm) return s;
+    }
+  }
+  // Fallback: return grade key as-is
+  return gradeVal;
 }
