@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+// Use real site key if configured, otherwise use Cloudflare test key (always passes)
+// Test keys from: https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+const TURNSTILE_SITE_KEY =
+  (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
+   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here')
+    ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+    : '1x00000000000000000000AA'; // Cloudflare always-passes test key
 
 interface TurnstileProps {
   onVerify: (token: string) => void;
@@ -12,13 +18,14 @@ interface TurnstileProps {
 export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const onVerifyRef = useRef(onVerify);
+  const onExpireRef = useRef(onExpire);
+
+  // Keep callbacks in refs to avoid re-rendering the widget
+  useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
+  useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
   useEffect(() => {
-    // Don't render if no site key or placeholder key
-    if (!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === '0x4AAAAAAA_your_site_key_here') {
-      return;
-    }
-
     const renderWidget = () => {
       if (!containerRef.current) return;
       if (!window.turnstile) return;
@@ -28,11 +35,10 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
 
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: TURNSTILE_SITE_KEY,
-        callback: onVerify,
-        'expired-callback': onExpire,
+        callback: (token: string) => onVerifyRef.current(token),
+        'expired-callback': () => onExpireRef.current(),
         theme: 'light',
         size: 'normal',
-        dir: 'rtl',
       });
     };
 
@@ -51,12 +57,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     }, 200);
 
     return () => clearInterval(interval);
-  }, [onVerify, onExpire]);
-
-  // Don't render anything if no site key
-  if (!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === '0x4AAAAAAA_your_site_key_here') {
-    return null;
-  }
+  }, []);
 
   return <div ref={containerRef} className="flex justify-center" />;
 }
