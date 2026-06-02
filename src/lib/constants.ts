@@ -1,4 +1,14 @@
 // =====================================================
+// Sheet Names - Constants (no @ suffix)
+// These are the ONLY valid sheet names the app uses.
+// The API proxy automatically tries with @ appended
+// to handle sheets that use @ to hide from direct access.
+// =====================================================
+
+export const SHEET_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8', '10', '11S', '11A'] as const;
+export type SheetName = (typeof SHEET_NAMES)[number];
+
+// =====================================================
 // Grade & Stage Definitions
 // =====================================================
 
@@ -155,7 +165,6 @@ export function isAbsenceCode(value: string): boolean {
 }
 
 export function usesAdvancedScale(data: StudentResult): boolean {
-  // Strip @ from cl before checking
   const clClean = stripAt(data?.cl || '');
   return [clClean, data?.clLabel]
     .map(normalizeArabic)
@@ -253,7 +262,6 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
   const mark = bold ? '*' : '';
   const totals = computeTotals(data);
   const adv = usesAdvancedScale(data);
-  // Strip @ from cl for grade label lookup
   const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
 
   const lines = [
@@ -286,52 +294,4 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
   }
 
   return lines;
-}
-
-/**
- * Check if a grade is active based on the active sheets list.
- * @ suffix is already stripped by the API proxy, so we match directly.
- */
-export function isGradeActive(
-  gradeVal: string,
-  activeSheets: string[]
-): boolean {
-  if (!activeSheets?.length) return true;
-  const fullName = GRADE_MAP[gradeVal] || '';
-  return activeSheets.some((sheetName) => {
-    const s = sheetName.trim();
-    // Skip non-grade sheets
-    if (s === 'template' || s === 'RateLimitLog' || s === 'Settings') return false;
-    // Direct match (@ already stripped by API)
-    if (s === gradeVal) return true;
-    // Match by Arabic label name
-    if (fullName) {
-      const sNorm = normalizeArabic(s);
-      const fNorm = normalizeArabic(fullName);
-      if (fNorm && sNorm === fNorm) return true;
-    }
-    return false;
-  });
-}
-
-/**
- * Resolve a grade value to the sheet name.
- * Since @ suffix is now stripped by the API proxy, activeSheets no longer contain @.
- * The API handles mapping clean names back to actual sheet names with @.
- */
-export function resolveSheetName(gradeVal: string, activeSheets: string[]): string {
-  if (!activeSheets?.length) return gradeVal;
-  // Direct match (@ already stripped by API proxy)
-  if (activeSheets.includes(gradeVal)) return gradeVal;
-  // Try matching by Arabic label
-  const fullName = GRADE_MAP[gradeVal] || '';
-  if (fullName) {
-    const fNorm = normalizeArabic(fullName);
-    const match = activeSheets.find((s) => {
-      const sNorm = normalizeArabic(s.trim());
-      return sNorm === fNorm;
-    });
-    if (match) return match.trim();
-  }
-  return gradeVal;
 }

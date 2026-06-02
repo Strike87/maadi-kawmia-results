@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -26,7 +26,6 @@ import {
   STAGE_GRADES,
   GRADE_MAP,
   normalizeId,
-  isGradeActive,
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
@@ -39,7 +38,6 @@ interface SearchFormProps {
 
 export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [terms, setTerms] = useState<string[]>([]);
-  const [activeSheets, setActiveSheets] = useState<string[]>([]);
   const [selectedTerm, setSelectedTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -50,7 +48,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [termsLoaded, setTermsLoaded] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-  // Fetch terms on mount
+  // Fetch terms on mount (only terms, not activeSheets)
   useEffect(() => {
     async function fetchTerms() {
       try {
@@ -63,7 +61,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
 
         if (data.terms?.length) {
           setTerms(data.terms);
-          setActiveSheets(data.activeSheets || []);
         } else {
           setTerms(['أخر العام 2026']);
           setWarning('تعذر الاتصال بالخادم. يتم عرض البيانات الافتراضية.');
@@ -84,21 +81,8 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     }
   }, [terms, selectedTerm]);
 
-  // Get available stages
-  const getAvailableStages = useCallback(() => {
-    if (!activeSheets.length) return STAGE_GRADES;
-    const filtered: Record<string, { label: string; grades: { value: string; label: string }[] }> = {};
-    for (const [key, stage] of Object.entries(STAGE_GRADES)) {
-      const activeGrades = stage.grades.filter((g) => isGradeActive(g.value, activeSheets));
-      if (activeGrades.length > 0) {
-        filtered[key] = { ...stage, grades: activeGrades };
-      }
-    }
-    return filtered;
-  }, [activeSheets]);
-
-  const availableStages = getAvailableStages();
-  const currentStageGrades = selectedStage ? availableStages[selectedStage]?.grades || [] : [];
+  // Use STAGE_GRADES directly - sheet names are constant
+  const currentStageGrades = selectedStage ? STAGE_GRADES[selectedStage]?.grades || [] : [];
 
   // Handle national ID input
   const handleIdChange = (value: string) => {
@@ -135,7 +119,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
 
     try {
       // Grade value is sent as-is; API resolves @ suffix server-side
-
       const res = await fetch('/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,7 +254,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر المرحلة الدراسية --</option>
-                {Object.entries(availableStages).map(([key, stage]) => (
+                {Object.entries(STAGE_GRADES).map(([key, stage]) => (
                   <option key={key} value={key}>{stage.label}</option>
                 ))}
               </select>
@@ -400,6 +383,3 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     </motion.div>
   );
 }
-
-
-

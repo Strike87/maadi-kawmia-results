@@ -46,6 +46,75 @@ async function verifyTurnstile(token: string): Promise<boolean> {
   }
 }
 
+/**
+ * Try to fetch student data from Google Apps Script.
+ * Handles @ suffix on sheet names: tries the name as-is first,
+ * then with @ appended if the first attempt finds nothing.
+ */
+async function fetchStudentData(
+  termName: string,
+  cls: string,
+  roll: string
+): Promise<{ data: Record<string, unknown> | null; error: string | null }> {
+  const tryRequest = async (cn: string, tn: string) => {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'getStudentData',
+        termName: tn,
+        cls: cn,
+        roll,
+        apiKey: API_KEY,
+      }),
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    // If GAS returned an error or no student found, return null
+    if (json.error || !json.stn) return null;
+    return json;
+  };
+
+  // Strategy: try multiple name variants for both cls and termName
+  // to handle sheets that use @ suffix to hide from direct access.
+  const clsVariants = [cls, cls + '@'];
+  const termVariants = [termName, termName + '@'];
+
+  for (const cn of clsVariants) {
+    for (const tn of termVariants) {
+      const result = await tryRequest(cn, tn);
+      if (result) {
+        return { data: result, error: null };
+      }
+    }
+  }
+
+  // Nothing found — try one last time with original names to get the actual error
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      action: 'getStudentData',
+      termName,
+      cls,
+      roll,
+      apiKey: API_KEY,
+    }),
+  });
+
+  if (!res.ok) {
+    return { data: null, error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' };
+  }
+
+  const data = await res.json();
+  if (data.error) {
+    return { data: null, error: data.error };
+  }
+
+  return { data: null, error: 'لم يتم العثور على نتيجة. تأكد من صحة البيانات.' };
+}
+
 export async function GET() {
   return NextResponse.json({ message: 'Hello, world!' });
 }
@@ -111,77 +180,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Fetch the original sheet names to resolve @ suffix
-      // The frontend sends stripped names (without @), but the Google Sheet
-      // may have names WITH @. We need to find the actual sheet name.
-      let sheetsRes;
-      try {
-        sheetsRes = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'getTermNames' }),
-        });
-      } catch {
-        // If we can't get sheet names, proceed with what we have
+      // Try fetching student data, handling @ suffix on sheet names
+      const { data, error } = await fetchStudentData(termName, cls, roll);
+
+      if (error) {
+        return NextResponse.json({ error }, { status: 400 });
       }
-
-      let resolvedTermName = termName;
-      let resolvedCls = cls;
-
-      if (sheetsRes && sheetsRes.ok) {
-        const sheetsData = await sheetsRes.json();
-        const originalTerms: string[] = sheetsData.terms || [];
-        const originalSheets: string[] = sheetsData.activeSheets || [];
-
-        // Resolve termName: if the original has "Term@" but frontend sent "Term"
-        for (const orig of originalTerms) {
-          if (stripAt(orig) === termName) {
-            resolvedTermName = orig; // Use the original with @
-            break;
-          }
-        }
-
-        // Resolve cls: if the original has "7@" but frontend sent "7"
-        for (const orig of originalSheets) {
-          if (stripAt(orig) === cls) {
-            resolvedCls = orig; // Use the original with @
-            break;
-          }
-        }
-      }
-
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'getStudentData',
-          termName: resolvedTermName,
-          cls: resolvedCls,
-          roll,
-          apiKey: API_KEY,
-        }),
-      });
-
-      if (!res.ok) {
-        if (IS_PRODUCTION) {
-          console.error('Google API error');
-        } else {
-          console.error(`Google API error: ${res.status}`);
-        }
-        return NextResponse.json(
-          { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
-          { status: 502 }
-        );
-      }
-
-      const data = await res.json();
 
       // Strip @ from termName and cl in the response before sending to frontend
-      if (data.termName) {
-        data.termName = stripAt(data.termName);
+      if (data!.termName) {
+        data!.termName = stripAt(data!.termName as string);
       }
-      if (data.cl) {
-        data.cl = stripAt(data.cl);
+      if (data!.cl) {
+        data!.cl = stripAt(data!.cl as string);
       }
 
       return NextResponse.json(data);
