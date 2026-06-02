@@ -108,7 +108,7 @@
   --sidebar-accent: oklch(0.22 0.015 260);
   --sidebar-accent-foreground: oklch(0.95 0.01 250);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.2 255);
+  --sidebar-ring: oklch(0.65 0.22 255);
 }
 
 @layer base {
@@ -163,20 +163,114 @@ select option {
   background: oklch(0.5 0 0 / 50%);
 }
 
-/* Print styles */
+/* National ID input: placeholder from right, numbers from left */
+#nationalId {
+  direction: ltr;
+  text-align: left;
+}
+
+#nationalId::placeholder {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ========== Print Styles - A4 Portrait Full Page ========== */
 @media print {
-  .no-print {
-    display: none !important;
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
   }
-  body {
+
+  /* Reset everything */
+  html, body {
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 11px !important;
+  }
+
+  /* Hide all non-result elements */
+  .no-print,
+  header,
+  footer,
+  .bg-gradient-pattern > main > .no-print,
+  .result-actions {
+    display: none !important;
+  }
+
+  /* Remove background effects */
+  .bg-gradient-pattern,
+  .min-h-screen {
+    background: none !important;
+    background-image: none !important;
+    min-height: auto !important;
+    display: block !important;
+  }
+
+  /* Main container fills page */
+  .bg-gradient-pattern > main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    space-y: 0 !important;
+  }
+
+  /* Remove motion wrapper constraints */
+  .bg-gradient-pattern > main > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Result container - full A4 width with nice margins */
+  .result-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The main result card */
+  .print-result-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force all colors to print */
+  .print-result-card * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the print button itself */
+  .print-btn {
+    display: none !important;
+  }
+
+  /* Scale result content to fit A4 height nicely */
+  .print-result-card > div {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  /* Ensure disclaimer is visible in print */
+  .print-disclaimer {
+    page-break-inside: avoid !important;
   }
 }
 
-/* Background gradient pattern */
+/* Background gradient pattern (screen only) */
 .bg-gradient-pattern {
   background-image: 
     radial-gradient(at 20% 0%, oklch(0.55 0.2 255 / 8%) 0, transparent 50%),
