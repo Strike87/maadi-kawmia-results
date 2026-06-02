@@ -19,13 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -142,7 +135,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     onLoading(true);
 
     try {
-      // Resolve the actual sheet name (e.g. "7" → "7@")
       const resolvedGrade = resolveSheetName(selectedGrade, activeSheets);
 
       const res = await fetch('/api', {
@@ -231,33 +223,33 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
-          {/* Term Select */}
+          {/* Term Select - Native HTML select for RTL support */}
           <div className="space-y-2">
             <Label htmlFor="term" className="text-sm font-bold flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
               الفترة الدراسية
             </Label>
-            <Select
-              value={selectedTerm}
-              onValueChange={(val) => {
-                setSelectedTerm(val);
-                setSelectedStage('');
-                setSelectedGrade('');
-                setError('');
-              }}
-              disabled={!termsLoaded}
-            >
-              <SelectTrigger id="term" className="w-full h-12 text-base">
-                <SelectValue placeholder="-- اختر الفترة الدراسية --" />
-              </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
+            <div className="relative">
+              <select
+                id="term"
+                value={selectedTerm}
+                onChange={(e) => {
+                  setSelectedTerm(e.target.value);
+                  setSelectedStage('');
+                  setSelectedGrade('');
+                  setError('');
+                }}
+                disabled={!termsLoaded}
+                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ direction: 'rtl' }}
+              >
+                <option value="" disabled>-- اختر الفترة الدراسية --</option>
                 {terms.map((term) => (
-                  <SelectItem key={term} value={term} className="text-base">
-                    {term}
-                  </SelectItem>
+                  <option key={term} value={term}>{term}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
+            </div>
           </div>
 
           {/* Stage Select */}
@@ -266,26 +258,26 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <GraduationCap className="h-3.5 w-3.5 text-primary" />
               المرحلة الدراسية
             </Label>
-            <Select
-              value={selectedStage}
-              onValueChange={(val) => {
-                setSelectedStage(val);
-                setSelectedGrade('');
-                setError('');
-              }}
-              disabled={!selectedTerm}
-            >
-              <SelectTrigger id="stage" className="w-full h-12 text-base">
-                <SelectValue placeholder="-- اختر المرحلة الدراسية --" />
-              </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
+            <div className="relative">
+              <select
+                id="stage"
+                value={selectedStage}
+                onChange={(e) => {
+                  setSelectedStage(e.target.value);
+                  setSelectedGrade('');
+                  setError('');
+                }}
+                disabled={!selectedTerm}
+                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ direction: 'rtl' }}
+              >
+                <option value="" disabled>-- اختر المرحلة الدراسية --</option>
                 {Object.entries(availableStages).map(([key, stage]) => (
-                  <SelectItem key={key} value={key} className="text-base">
-                    {stage.label}
-                  </SelectItem>
+                  <option key={key} value={key}>{stage.label}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
+            </div>
           </div>
 
           {/* Grade Select */}
@@ -294,29 +286,27 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               <ChevronDown className="h-3.5 w-3.5 text-primary" />
               الصف الدراسي
             </Label>
-            <Select
-              value={selectedGrade}
-              onValueChange={(val) => {
-                setSelectedGrade(val);
-                setError('');
-              }}
-              disabled={!selectedStage}
-            >
-              <SelectTrigger id="grade" className="w-full h-12 text-base">
-                <SelectValue placeholder={
-                  selectedStage
-                    ? '-- اختر الصف الدراسي --'
-                    : '-- اختر المرحلة الدراسية أولاً --'
-                } />
-              </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="end" sideOffset={4}>
+            <div className="relative">
+              <select
+                id="grade"
+                value={selectedGrade}
+                onChange={(e) => {
+                  setSelectedGrade(e.target.value);
+                  setError('');
+                }}
+                disabled={!selectedStage}
+                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ direction: 'rtl' }}
+              >
+                <option value="" disabled>
+                  {selectedStage ? '-- اختر الصف الدراسي --' : '-- اختر المرحلة الدراسية أولاً --'}
+                </option>
                 {currentStageGrades.map((grade) => (
-                  <SelectItem key={grade.value} value={grade.value} className="text-base">
-                    {grade.label}
-                  </SelectItem>
+                  <option key={grade.value} value={grade.value}>{grade.label}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
+            </div>
             {selectedGrade && (
               <p className="text-xs text-muted-foreground font-semibold">
                 {GRADE_MAP[selectedGrade]}
@@ -396,7 +386,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             ) : (
               <>
                 <Search className="h-5 w-5" />
-                <span>عرض النتيجة</span>
+                <span>عرض النتيجة الآن</span>
               </>
             )}
           </Button>
