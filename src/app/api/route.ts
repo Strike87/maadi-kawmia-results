@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL =
-  'https://script.google.com/macros/s/AKfycbw14UqwxrsY4bdaJOdlruK1Ik80vzgqqitmsQIvV9Z5VsVQuOq9ynqWq0AJLIgzDpUV/exec';
+  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
 
 // ← نفس المفتاح في Google Apps Script setupProperties
 const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
