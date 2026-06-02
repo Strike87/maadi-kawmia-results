@@ -10,9 +10,13 @@ const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
+/** Strip trailing @ signs from sheet/term names */
+function stripAt(val: string): string {
+  return String(val || '').replace(/@+$/, '');
+}
+
 async function verifyTurnstile(token: string): Promise<boolean> {
   if (!TURNSTILE_SECRET_KEY) {
-    // In development without a secret key, skip verification
     console.warn('TURNSTILE_SECRET_KEY not set — skipping captcha verification');
     return true;
   }
@@ -33,7 +37,6 @@ async function verifyTurnstile(token: string): Promise<boolean> {
     const data = await res.json();
     return data.success === true;
   } catch (error) {
-    // Hide detailed error in production
     if (IS_PRODUCTION) {
       console.error('Turnstile verification failed');
     } else {
@@ -60,7 +63,6 @@ export async function POST(request: NextRequest) {
       });
 
       if (!res.ok) {
-        // Hide detailed error in production
         if (IS_PRODUCTION) {
           console.error('Google API error');
         } else {
@@ -73,6 +75,15 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await res.json();
+
+      // Strip @ suffix from terms and activeSheets before sending to frontend
+      if (data.terms && Array.isArray(data.terms)) {
+        data.terms = data.terms.map((t: string) => stripAt(t));
+      }
+      if (data.activeSheets && Array.isArray(data.activeSheets)) {
+        data.activeSheets = data.activeSheets.map((s: string) => stripAt(s));
+      }
+
       return NextResponse.json(data);
     }
 
@@ -100,20 +111,58 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Fetch the original sheet names to resolve @ suffix
+      // The frontend sends stripped names (without @), but the Google Sheet
+      // may have names WITH @. We need to find the actual sheet name.
+      let sheetsRes;
+      try {
+        sheetsRes = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getTermNames' }),
+        });
+      } catch {
+        // If we can't get sheet names, proceed with what we have
+      }
+
+      let resolvedTermName = termName;
+      let resolvedCls = cls;
+
+      if (sheetsRes && sheetsRes.ok) {
+        const sheetsData = await sheetsRes.json();
+        const originalTerms: string[] = sheetsData.terms || [];
+        const originalSheets: string[] = sheetsData.activeSheets || [];
+
+        // Resolve termName: if the original has "Term@" but frontend sent "Term"
+        for (const orig of originalTerms) {
+          if (stripAt(orig) === termName) {
+            resolvedTermName = orig; // Use the original with @
+            break;
+          }
+        }
+
+        // Resolve cls: if the original has "7@" but frontend sent "7"
+        for (const orig of originalSheets) {
+          if (stripAt(orig) === cls) {
+            resolvedCls = orig; // Use the original with @
+            break;
+          }
+        }
+      }
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'getStudentData',
-          termName,
-          cls,
+          termName: resolvedTermName,
+          cls: resolvedCls,
           roll,
           apiKey: API_KEY,
         }),
       });
 
       if (!res.ok) {
-        // Hide detailed error in production
         if (IS_PRODUCTION) {
           console.error('Google API error');
         } else {
@@ -126,12 +175,20 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await res.json();
+
+      // Strip @ from termName and cl in the response before sending to frontend
+      if (data.termName) {
+        data.termName = stripAt(data.termName);
+      }
+      if (data.cl) {
+        data.cl = stripAt(data.cl);
+      }
+
       return NextResponse.json(data);
     }
 
     return NextResponse.json({ error: 'إجراء غير صالح.' }, { status: 400 });
   } catch (error) {
-    // Hide detailed error in production — never expose stack traces
     if (IS_PRODUCTION) {
       console.error('API proxy error');
     } else {

@@ -27,7 +27,6 @@ import {
   GRADE_MAP,
   normalizeId,
   isGradeActive,
-  resolveSheetName,
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
@@ -135,7 +134,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     onLoading(true);
 
     try {
-      const resolvedGrade = resolveSheetName(selectedGrade, activeSheets);
+      // Grade value is sent as-is; API resolves @ suffix server-side
 
       const res = await fetch('/api', {
         method: 'POST',
@@ -143,7 +142,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
         body: JSON.stringify({
           action: 'getStudentData',
           termName: selectedTerm,
-          cls: resolvedGrade,
+          cls: selectedGrade,
           roll: nationalId,
           captchaToken: captchaToken || undefined,
         }),

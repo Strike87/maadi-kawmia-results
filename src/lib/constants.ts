@@ -290,7 +290,7 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
 
 /**
  * Check if a grade is active based on the active sheets list.
- * Handles @ suffix in sheet names (e.g. "7@" matches grade "7").
+ * @ suffix is already stripped by the API proxy, so we match directly.
  */
 export function isGradeActive(
   gradeVal: string,
@@ -302,10 +302,8 @@ export function isGradeActive(
     const s = sheetName.trim();
     // Skip non-grade sheets
     if (s === 'template' || s === 'RateLimitLog' || s === 'Settings') return false;
-    // Direct match
+    // Direct match (@ already stripped by API)
     if (s === gradeVal) return true;
-    // Match with @ stripped (e.g. "7@" matches "7")
-    if (stripAt(s) === gradeVal) return true;
     // Match by Arabic label name
     if (fullName) {
       const sNorm = normalizeArabic(s);
@@ -317,17 +315,14 @@ export function isGradeActive(
 }
 
 /**
- * Resolve a grade value to the actual sheet name in the spreadsheet.
- * If the grade "7" has a sheet named "7@", this returns "7@".
- * If no @ version exists, returns the grade value as-is.
+ * Resolve a grade value to the sheet name.
+ * Since @ suffix is now stripped by the API proxy, activeSheets no longer contain @.
+ * The API handles mapping clean names back to actual sheet names with @.
  */
 export function resolveSheetName(gradeVal: string, activeSheets: string[]): string {
   if (!activeSheets?.length) return gradeVal;
-  // Direct match first
+  // Direct match (@ already stripped by API proxy)
   if (activeSheets.includes(gradeVal)) return gradeVal;
-  // Try with @ suffix
-  const withAt = gradeVal + '@';
-  if (activeSheets.includes(withAt)) return withAt;
   // Try matching by Arabic label
   const fullName = GRADE_MAP[gradeVal] || '';
   if (fullName) {
