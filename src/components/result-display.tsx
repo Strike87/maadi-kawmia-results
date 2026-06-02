@@ -29,6 +29,21 @@ interface ResultDisplayProps {
   onNewSearch: () => void;
 }
 
+// Short grade labels for mobile (to prevent overlap in narrow columns)
+function shortGradeLabel(pct: number, adv: boolean): string {
+  if (adv) {
+    if (pct >= 85) return 'ممتاز';
+    if (pct >= 75) return 'جيد جداً';
+    if (pct >= 65) return 'جيد';
+    if (pct >= 50) return 'مقبول';
+    return 'دون المستوى';
+  }
+  if (pct >= 85) return 'يفوق التوقعات';
+  if (pct >= 65) return 'يلبي التوقعات';
+  if (pct >= 50) return 'أقل';
+  return 'أقل من المتوقع';
+}
+
 export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const [copied, setCopied] = useState(false);
   const adv = usesAdvancedScale(data);
@@ -63,12 +78,12 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   };
 
   // Helper: get grade badge based on percentage
-  const getGradeBadge = (pct: number): { bg: string; text: string } => {
-    if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات' };
-    if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
-    if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات' };
-    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً' };
-    return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع' };
+  const getGradeBadge = (pct: number): { bg: string; text: string; shortText: string } => {
+    if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات', shortText: adv ? 'ممتاز' : 'يفوق' };
+    if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً', shortText: 'جيد جداً' };
+    if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات', shortText: 'يلبي' };
+    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً', shortText: adv ? 'مقبول' : 'أحياناً' };
+    return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع', shortText: 'دون' };
   };
 
   // Calculate subject percentage
@@ -167,10 +182,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             </div>
 
             {/* Table Header Row */}
-            <div className="flex bg-slate-700 dark:bg-slate-800 text-white text-sm font-black">
-              <div className="w-[45%] py-2 px-3 text-right border-l border-slate-600 sm:px-4 sm:py-2.5 sm:text-base">المادة</div>
-              <div className="w-[25%] py-2 px-2 text-center border-l border-slate-600 sm:px-3 sm:py-2.5 sm:text-base">الدرجة</div>
-              <div className="w-[30%] py-2 px-2 text-center sm:px-3 sm:py-2.5 sm:text-base">التقدير</div>
+            <div className="flex bg-slate-700 dark:bg-slate-800 text-white text-[13px] font-black sm:text-sm">
+              <div className="flex-[5] py-2 px-3 text-right border-l border-slate-600 sm:px-4 sm:py-2.5">المادة</div>
+              <div className="flex-[3] py-2 px-2 text-center border-l border-slate-600 sm:px-3 sm:py-2.5">الدرجة</div>
+              <div className="flex-[4] py-2 px-2 text-center sm:px-3 sm:py-2.5">التقدير</div>
             </div>
 
             {/* Subject Rows */}
@@ -184,23 +199,25 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2, delay: i * 0.04 }}
-                    className={`flex text-sm ${
+                    className={`flex items-center text-[13px] sm:text-sm ${
                       i < totals.included.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                     }`}
                   >
-                    <div className="w-[45%] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 sm:text-base">
+                    <div className="flex-[5] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 sm:text-sm leading-tight">
                       {item.clean}
                     </div>
-                    <div className="w-[25%] py-2.5 px-2 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 sm:text-base">
+                    <div className="flex-[3] py-2.5 px-2 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 sm:text-sm whitespace-nowrap">
                       {formatScore(item)}
                     </div>
-                    <div className="w-[30%] py-1.5 px-1.5 flex items-center justify-center sm:px-2 sm:py-2">
+                    <div className="flex-[4] py-1 px-1.5 flex items-center justify-center sm:px-2 sm:py-2">
                       {badge ? (
                         <span
-                          className="text-white py-1 px-2.5 rounded-full text-[11px] font-black whitespace-nowrap sm:text-xs sm:px-3 sm:py-1.5"
+                          className="text-white py-1 px-2 rounded-full text-[10px] leading-tight font-black whitespace-nowrap sm:text-[11px] sm:px-2.5 sm:py-1"
                           style={{ background: badge.bg }}
                         >
-                          {badge.text}
+                          {/* Short text on mobile, full text on sm+ */}
+                          <span className="sm:hidden">{badge.shortText}</span>
+                          <span className="hidden sm:inline">{badge.text}</span>
                         </span>
                       ) : (
                         <span className="text-slate-400 text-xs sm:text-sm">{item.rawScore}</span>
@@ -215,17 +232,17 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: totals.included.length * 0.04 + 0.1 }}
-                className="flex items-center text-white text-sm font-black"
+                className="flex items-center text-white text-[13px] font-black sm:text-sm"
                 style={{ background: totalColor }}
               >
-                <div className="w-[45%] py-3 px-3 text-right border-l border-white/20 sm:px-4 sm:py-4 sm:text-base">
+                <div className="flex-[5] py-3 px-3 text-right border-l border-white/20 sm:px-4 sm:py-4 sm:text-sm">
                   المجموع الكلي
                 </div>
-                <div className="w-[25%] py-3 px-2 text-center border-l border-white/20 sm:px-3 sm:py-4 sm:text-base">
+                <div className="flex-[3] py-3 px-2 text-center border-l border-white/20 sm:px-3 sm:py-4 sm:text-sm whitespace-nowrap">
                   {totals.totalDisplay} / {totals.totalMax}
                 </div>
-                <div className="w-[30%] py-2 px-1.5 flex flex-col items-center justify-center gap-0.5 sm:px-2 sm:gap-1">
-                  <span className="bg-white/25 text-white py-1 px-2.5 rounded-full text-[11px] font-black whitespace-nowrap sm:text-xs sm:px-3">
+                <div className="flex-[4] py-2 px-1.5 flex flex-col items-center justify-center gap-0.5 sm:px-2 sm:gap-1">
+                  <span className="bg-white/25 text-white py-0.5 px-2 rounded-full text-[10px] font-black whitespace-nowrap sm:text-[11px] sm:px-2.5 sm:py-1">
                     {totalLabel}
                   </span>
                   <span className="text-white/90 text-[11px] font-black sm:text-xs">
@@ -236,12 +253,12 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             </div>
 
             {/* Percentage Bar */}
-            <div className="mt-2 px-1 sm:mt-3">
+            <div className="mt-2 px-1 sm:mt-3 print-percentage-bar">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-slate-500 dark:text-muted-foreground sm:text-sm">النسبة المئوية</span>
-                <span className="text-xs font-black sm:text-sm" style={{ color: totalColor }}>{totals.totalPct}%</span>
+                <span className="text-[11px] font-bold text-slate-500 dark:text-muted-foreground sm:text-xs">النسبة المئوية</span>
+                <span className="text-[11px] font-black sm:text-xs" style={{ color: totalColor }}>{totals.totalPct}%</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden sm:h-3">
+              <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden sm:h-2.5">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(totals.totalPct, 100)}%` }}
@@ -259,10 +276,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
               <div className="bg-slate-500 dark:bg-slate-600 text-white py-2 px-4 rounded-t-lg text-sm font-black text-center sm:text-base">
                 مواد غير مضافة للمجموع
               </div>
-              <div className="flex bg-slate-700 dark:bg-slate-800 text-white text-sm font-black">
-                <div className="w-[45%] py-2 px-3 text-right border-l border-slate-600 sm:px-4 sm:py-2.5 sm:text-base">المادة</div>
-                <div className="w-[25%] py-2 px-2 text-center border-l border-slate-600 sm:px-3 sm:py-2.5 sm:text-base">الدرجة</div>
-                <div className="w-[30%] py-2 px-2 text-center sm:px-3 sm:py-2.5 sm:text-base">التقدير</div>
+              <div className="flex bg-slate-700 dark:bg-slate-800 text-white text-[13px] font-black sm:text-sm">
+                <div className="flex-[5] py-2 px-3 text-right border-l border-slate-600 sm:px-4 sm:py-2.5">المادة</div>
+                <div className="flex-[3] py-2 px-2 text-center border-l border-slate-600 sm:px-3 sm:py-2.5">الدرجة</div>
+                <div className="flex-[4] py-2 px-2 text-center sm:px-3 sm:py-2.5">التقدير</div>
               </div>
               <div className="border border-slate-400 dark:border-border border-t-0 rounded-b-lg overflow-hidden">
                 {totals.excluded.map((item, i) => {
@@ -271,23 +288,24 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                   return (
                     <div
                       key={`exc-${i}`}
-                      className={`flex text-sm ${
+                      className={`flex items-center text-[13px] sm:text-sm ${
                         i < totals.excluded.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                       }`}
                     >
-                      <div className="w-[45%] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 sm:text-base">
+                      <div className="flex-[5] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 sm:text-sm leading-tight">
                         {item.clean}
                       </div>
-                      <div className="w-[25%] py-2.5 px-2 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 sm:text-base">
+                      <div className="flex-[3] py-2.5 px-2 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 sm:text-sm whitespace-nowrap">
                         {formatScore(item)}
                       </div>
-                      <div className="w-[30%] py-1.5 px-1.5 flex items-center justify-center sm:px-2 sm:py-2">
+                      <div className="flex-[4] py-1 px-1.5 flex items-center justify-center sm:px-2 sm:py-2">
                         {badge ? (
                           <span
-                            className="text-white py-1 px-2.5 rounded-full text-[11px] font-black whitespace-nowrap sm:text-xs sm:px-3 sm:py-1.5"
+                            className="text-white py-1 px-2 rounded-full text-[10px] leading-tight font-black whitespace-nowrap sm:text-[11px] sm:px-2.5 sm:py-1"
                             style={{ background: badge.bg }}
                           >
-                            {badge.text}
+                            <span className="sm:hidden">{badge.shortText}</span>
+                            <span className="hidden sm:inline">{badge.text}</span>
                           </span>
                         ) : (
                           <span className="text-slate-400 text-xs sm:text-sm">{item.rawScore}</span>
