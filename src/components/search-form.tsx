@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -26,6 +26,7 @@ import {
   STAGE_GRADES,
   GRADE_MAP,
   normalizeId,
+  isGradeActive,
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
@@ -38,6 +39,7 @@ interface SearchFormProps {
 
 export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [terms, setTerms] = useState<string[]>([]);
+  const [activeSheets, setActiveSheets] = useState<string[]>([]);
   const [selectedTerm, setSelectedTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -48,7 +50,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const [termsLoaded, setTermsLoaded] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-  // Fetch terms on mount (only terms, not activeSheets)
+  // ─── Live Sync: Fetch terms + activeSheets from Google Sheets ───
   useEffect(() => {
     async function fetchTerms() {
       try {
@@ -61,6 +63,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
 
         if (data.terms?.length) {
           setTerms(data.terms);
+          setActiveSheets(data.activeSheets || []);
         } else {
           setTerms(['أخر العام 2026']);
           setWarning('تعذر الاتصال بالخادم. يتم عرض البيانات الافتراضية.');
@@ -81,8 +84,25 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     }
   }, [terms, selectedTerm]);
 
-  // Use STAGE_GRADES directly - sheet names are constant
-  const currentStageGrades = selectedStage ? STAGE_GRADES[selectedStage]?.grades || [] : [];
+  // ─── filterStages(): Only show stages that have at least 1 active grade ───
+  const getFilteredStages = useCallback(() => {
+    if (!activeSheets.length) return STAGE_GRADES;
+    const filtered: Record<string, { label: string; grades: { value: string; label: string }[] }> = {};
+    for (const [key, stage] of Object.entries(STAGE_GRADES)) {
+      const activeGrades = stage.grades.filter((g) => isGradeActive(g.value, activeSheets));
+      if (activeGrades.length > 0) {
+        filtered[key] = { ...stage, grades: activeGrades };
+      }
+    }
+    return filtered;
+  }, [activeSheets]);
+
+  const filteredStages = getFilteredStages();
+
+  // ─── loadGrades(): Only show grades that are active for the selected stage ───
+  const currentStageGrades = selectedStage
+    ? (filteredStages[selectedStage]?.grades || [])
+    : [];
 
   // Handle national ID input
   const handleIdChange = (value: string) => {
@@ -118,7 +138,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     onLoading(true);
 
     try {
-      // Grade value is sent as-is; API resolves @ suffix server-side
       const res = await fetch('/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,7 +224,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             )}
           </AnimatePresence>
 
-          {/* Term Select - Native HTML select for RTL support */}
+          {/* Term Select */}
           <div className="space-y-2">
             <Label htmlFor="term" className="text-sm font-bold flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
@@ -234,7 +253,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </div>
           </div>
 
-          {/* Stage Select */}
+          {/* Stage Select — filtered: only stages with active grades */}
           <div className="space-y-2">
             <Label htmlFor="stage" className="text-sm font-bold flex items-center gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 text-primary" />
@@ -254,7 +273,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر المرحلة الدراسية --</option>
-                {Object.entries(STAGE_GRADES).map(([key, stage]) => (
+                {Object.entries(filteredStages).map(([key, stage]) => (
                   <option key={key} value={key}>{stage.label}</option>
                 ))}
               </select>
@@ -262,7 +281,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             </div>
           </div>
 
-          {/* Grade Select */}
+          {/* Grade Select — filtered: only active grades for selected stage */}
           <div className="space-y-2">
             <Label htmlFor="grade" className="text-sm font-bold flex items-center gap-1.5">
               <ChevronDown className="h-3.5 w-3.5 text-primary" />

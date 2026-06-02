@@ -7,7 +7,10 @@ export const SHEET_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8', '10', '11S',
 export type SheetName = (typeof SHEET_NAMES)[number];
 
 // =====================================================
-// Grade & Stage Definitions
+// Grade & Stage Definitions (Master Configuration)
+// This is the "source of truth" for all possible stages/grades.
+// The dropdowns are filtered dynamically based on activeSheets
+// returned from Google Sheets — only grades with existing tabs appear.
 // =====================================================
 
 export const GRADE_MAP: Record<string, string> = {
@@ -155,6 +158,39 @@ export function isExcluded(name: string): boolean {
 
 export function isAbsenceCode(value: string): boolean {
   return ABSENCE_CODES.has(String(value).trim());
+}
+
+/**
+ * Check if a grade is active based on the active sheets list
+ * returned by Google Apps Script (_getActiveSheets).
+ *
+ * Matching logic:
+ * 1. Direct match: gradeVal "7" matches sheet name "7"
+ * 2. Arabic label match: gradeVal "7" matches sheet name "الصف الأول الإعدادي"
+ *
+ * This enables dynamic dropdown filtering — only grades with
+ * existing sheet tabs appear in the menu.
+ */
+export function isGradeActive(
+  gradeVal: string,
+  activeSheets: string[]
+): boolean {
+  if (!activeSheets?.length) return true; // No data yet — show all
+  const fullName = GRADE_MAP[gradeVal] || '';
+  return activeSheets.some((sheetName) => {
+    const s = sheetName.trim();
+    // Skip non-grade sheets
+    if (s === 'template' || s === 'RateLimitLog' || s === 'Settings') return false;
+    // Direct match (e.g. "7" === "7")
+    if (s === gradeVal) return true;
+    // Match by Arabic label name (e.g. "الصف الأول الإعدادي")
+    if (fullName) {
+      const sNorm = normalizeArabic(s);
+      const fNorm = normalizeArabic(fullName);
+      if (fNorm && sNorm === fNorm) return true;
+    }
+    return false;
+  });
 }
 
 export function usesAdvancedScale(data: StudentResult): boolean {
