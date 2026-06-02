@@ -201,6 +201,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // ── Check for empty / no-student result ──
+      // GAS may return a successful response with no student data
+      // (empty name, empty headers/scores) when the ID is not found
+      const stn = String(data.stn || '').trim();
+      const id = String(data.id || '').trim();
+      const headers = data.headers as string[] | undefined;
+      if (!stn && !id && (!headers || headers.length === 0)) {
+        return NextResponse.json(
+          { error: getErrorMessage('NO_RESULT') },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json(data);
     }
 

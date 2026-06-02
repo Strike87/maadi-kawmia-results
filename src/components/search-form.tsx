@@ -177,6 +177,12 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
         return;
       }
 
+      // ── Extra check: empty student data (ID not found) ──
+      if (!data.stn && !data.id && (!data.headers || data.headers.length === 0)) {
+        setError(getErrorMessage('NO_RESULT'));
+        return;
+      }
+
       onResult(data);
     } catch {
       setError(getErrorMessage('CONNECTION_ERROR'));
