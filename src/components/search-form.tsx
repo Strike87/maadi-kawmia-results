@@ -193,7 +193,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
   const idLength = nationalId.length;
   const isIdComplete = idLength === 14;
   const canSearch = isIdComplete && !!selectedGrade && !!selectedTerm && !!captchaToken;
-  const isButtonDisabled = isLoading;
 
   return (
     <motion.div
@@ -396,7 +395,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
           {/* Submit Button */}
           <Button
             onClick={handleSearch}
-            disabled={isButtonDisabled}
+            disabled={isLoading || !canSearch}
             className="w-full h-13 text-base font-bold gap-2 rounded-xl bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-60 disabled:shadow-none"
             size="lg"
           >
