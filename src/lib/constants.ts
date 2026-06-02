@@ -108,11 +108,14 @@ export function mapGasError(rawError: string): string {
   if (/صف دراسي غير صالح|غير صالحة.*صف|invalid.*grade|invalid.*class/i.test(e)) return 'INVALID_GRADE';
   if (/الرقم القومي.*14|14.*رقم|national.*id.*14/i.test(e)) return 'INVALID_ID';
   if (/غير متاحة|not published|published.*false|_isPublished|B1.*false/i.test(e)) return 'RESULTS_UNAVAILABLE';
+  // ── IMPORTANT: NO_RESULT must be checked BEFORE SHEET_NOT_FOUND ──
+  // Both contain "لم يتم العثور" but "لم يتم العثور على نتيجة" means student not found,
+  // while "لم يتم العثور على بيانات هذا الصف" means sheet not found.
+  if (/لم يتم العثور على نتيجة|الرقم القومي.*غير موجود|no.*result|no.*data.*found|not found.*student|student.*not/i.test(e)) return 'NO_RESULT';
   if (/لم يتم العثور|not found|sheet.*not.*found|no.*sheet/i.test(e)) return 'SHEET_NOT_FOUND';
   if (/طلبات كثيرة|rate.?limit|too many|throttl/i.test(e)) return 'RATE_LIMITED';
   if (/إعدادات.*غير مكتملة|settings.*incomplete|missing.*column|لم يتم العثور على عمود/i.test(e)) return 'SETTINGS_INCOMPLETE';
   if (/خطأ أثناء قراءة|error.*reading|read.*error|corrupted/i.test(e)) return 'DATA_READ_ERROR';
-  if (/لم يتم العثور على نتيجة|no.*result|no.*data.*found|not found.*student/i.test(e)) return 'NO_RESULT';
   if (/مصاريف|fees|المصاريف/i.test(e)) return 'FEES_UNPAID';
 
   // ── Fallback: return the raw string as-is so something is always shown ──

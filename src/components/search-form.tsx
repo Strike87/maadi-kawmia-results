@@ -60,7 +60,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'getTermNames' }),
         });
-        const data: TermInfo = await res.json();
+        const data: TermInfo & { error?: string } = await res.json();
 
         if (data.error) {
           setTerms(['أخر العام 2026']);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GRADE_MAP, getErrorMessage } from '@/lib/constants';
+import { GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
 
 const API_URL =
   'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
@@ -181,32 +181,18 @@ export async function POST(request: NextRequest) {
 
       if (data.error) {
         const rawError = String(data.error);
-
-        // ── Special case: "لم يتم العثور على بيانات هذا الصف" ──
-        // GAS returns this SAME error for both:
-        //   1. Sheet tab not found (truly invalid grade)
-        //   2. Student not found in the sheet (valid grade, wrong ID)
-        // Since we already validated the grade above (cls in GRADE_MAP),
-        // if we reach here, the grade IS valid → the error must be
-        // "student not found", NOT "sheet not found".
-        if (/لم يتم العثور/.test(rawError) && cls in GRADE_MAP) {
-          return NextResponse.json(
-            { error: getErrorMessage('NO_RESULT') },
-            { status: 404 }
-          );
-        }
-
         const mappedError = getErrorMessage(rawError);
-        // Determine appropriate HTTP status based on error type
+        // Determine appropriate HTTP status based on mapped error key
+        const errorKey = mapGasError(rawError);
         let status = 400;
 
-        if (/غير متاحة|not published|_isPublished/i.test(rawError)) {
+        if (errorKey === 'RESULTS_UNAVAILABLE') {
           status = 403;
-        } else if (/طلبات كثيرة|rate.?limit|too many/i.test(rawError)) {
+        } else if (errorKey === 'RATE_LIMITED') {
           status = 429;
-        } else if (/لم يتم العثور|no.*result/i.test(rawError)) {
+        } else if (errorKey === 'NO_RESULT' || errorKey === 'SHEET_NOT_FOUND') {
           status = 404;
-        } else if (/مصاريف|fees/i.test(rawError)) {
+        } else if (errorKey === 'FEES_UNPAID') {
           status = 403;
         }
 
