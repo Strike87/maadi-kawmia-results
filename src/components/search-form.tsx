@@ -27,6 +27,7 @@ import {
   GRADE_MAP,
   normalizeId,
   isGradeActive,
+  getErrorMessage,
   type StudentResult,
   type TermInfo,
 } from '@/lib/constants';
@@ -61,7 +62,10 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
         });
         const data: TermInfo = await res.json();
 
-        if (data.terms?.length) {
+        if (data.error) {
+          setTerms(['أخر العام 2026']);
+          setWarning(getErrorMessage(data.error));
+        } else if (data.terms?.length) {
           setTerms(data.terms);
           setActiveSheets(data.activeSheets || []);
         } else {
@@ -116,21 +120,36 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     setError('');
     setWarning('');
 
+    // ── Frontend validation ──
     if (!selectedTerm) {
-      setError('يرجى اختيار الفترة الدراسية.');
+      setError(getErrorMessage('MISSING_FIELDS'));
       return;
     }
+
+    // Validate that the selected term is in the fetched terms list
+    if (terms.length > 0 && !terms.includes(selectedTerm)) {
+      setError(getErrorMessage('INVALID_TERM'));
+      return;
+    }
+
     if (!selectedGrade) {
-      setError('يرجى اختيار الصف الدراسي.');
+      setError(getErrorMessage('MISSING_FIELDS'));
       return;
     }
+
+    // Validate that the selected grade exists in GRADE_MAP
+    if (!(selectedGrade in GRADE_MAP)) {
+      setError(getErrorMessage('INVALID_GRADE'));
+      return;
+    }
+
     if (!/^[0-9]{14}$/.test(nationalId)) {
-      setError('الرقم القومي يجب أن يكون 14 رقماً.');
+      setError(getErrorMessage('INVALID_ID'));
       return;
     }
 
     if (!captchaToken) {
-      setError('يرجى إكمال التحقق الأمني أولاً.');
+      setError(getErrorMessage('MISSING_CAPTCHA'));
       return;
     }
 
@@ -153,13 +172,14 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
       const data = await res.json();
 
       if (data.error) {
+        // Error already mapped by API route, just display it
         setError(data.error);
         return;
       }
 
       onResult(data);
     } catch {
-      setError('حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.');
+      setError(getErrorMessage('CONNECTION_ERROR'));
     } finally {
       setIsLoading(false);
       onLoading(false);

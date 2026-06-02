@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GRADE_MAP, getErrorMessage } from '@/lib/constants';
 
 const API_URL =
   'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, termName, cls, roll, captchaToken } = body;
 
+    // ─── getTermNames ───
     if (action === 'getTermNames') {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -64,35 +66,70 @@ export async function POST(request: NextRequest) {
           console.error(`Google API error: ${res.status}`);
         }
         return NextResponse.json(
-          { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
+          { error: getErrorMessage('SERVER_ERROR') },
           { status: 502 }
         );
       }
 
       const data = await res.json();
+
+      // Pass through GAS errors with mapping
+      if (data.error) {
+        return NextResponse.json(
+          { error: getErrorMessage(data.error) },
+          { status: 502 }
+        );
+      }
+
       return NextResponse.json(data);
     }
 
+    // ─── getStudentData ───
     if (action === 'getStudentData') {
+      // ── Validate required fields ──
       if (!termName || !cls || !roll) {
         return NextResponse.json(
-          { error: 'يرجى ملء جميع الحقول المطلوبة.' },
+          { error: getErrorMessage('MISSING_FIELDS') },
           { status: 400 }
         );
       }
 
-      // Verify Turnstile captcha
+      // ── Validate termName (must be a non-empty string) ──
+      if (typeof termName !== 'string' || !termName.trim()) {
+        return NextResponse.json(
+          { error: getErrorMessage('INVALID_TERM') },
+          { status: 400 }
+        );
+      }
+
+      // ── Validate grade (must be in GRADE_MAP) ──
+      if (!(cls in GRADE_MAP)) {
+        return NextResponse.json(
+          { error: getErrorMessage('INVALID_GRADE') },
+          { status: 400 }
+        );
+      }
+
+      // ── Validate national ID ──
+      if (!/^[0-9]{14}$/.test(String(roll).trim())) {
+        return NextResponse.json(
+          { error: getErrorMessage('INVALID_ID') },
+          { status: 400 }
+        );
+      }
+
+      // ── Verify Turnstile captcha ──
       if (captchaToken) {
         const isValid = await verifyTurnstile(captchaToken);
         if (!isValid) {
           return NextResponse.json(
-            { error: 'فشل التحقق من الكابتشا. يرجى المحاولة مرة أخرى.' },
+            { error: getErrorMessage('CAPTCHA_FAILED') },
             { status: 403 }
           );
         }
       } else if (TURNSTILE_SECRET_KEY) {
         return NextResponse.json(
-          { error: 'يرجى إكمال التحقق من الكابتشا.' },
+          { error: getErrorMessage('MISSING_CAPTCHA') },
           { status: 403 }
         );
       }
@@ -109,23 +146,68 @@ export async function POST(request: NextRequest) {
         }),
       });
 
+      // ── Handle HTTP-level errors from GAS ──
       if (!res.ok) {
         if (IS_PRODUCTION) {
           console.error('Google API error');
         } else {
           console.error(`Google API error: ${res.status}`);
         }
+
+        // 429 = rate limited by GAS backend
+        if (res.status === 429) {
+          return NextResponse.json(
+            { error: getErrorMessage('RATE_LIMITED') },
+            { status: 429 }
+          );
+        }
+
         return NextResponse.json(
-          { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
+          { error: getErrorMessage('SERVER_ERROR') },
           { status: 502 }
         );
       }
 
-      const data = await res.json();
+      // ── Parse GAS response and map any error ──
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        return NextResponse.json(
+          { error: getErrorMessage('DATA_READ_ERROR') },
+          { status: 502 }
+        );
+      }
+
+      if (data.error) {
+        const mappedError = getErrorMessage(String(data.error));
+        // Determine appropriate HTTP status based on error type
+        const errorKey = String(data.error);
+        let status = 400;
+
+        if (/غير متاحة|not published|_isPublished/i.test(errorKey)) {
+          status = 403;
+        } else if (/طلبات كثيرة|rate.?limit|too many/i.test(errorKey)) {
+          status = 429;
+        } else if (/لم يتم العثور على نتيجة|no.*result/i.test(errorKey)) {
+          status = 404;
+        } else if (/مصاريف|fees/i.test(errorKey)) {
+          status = 403;
+        }
+
+        return NextResponse.json(
+          { error: mappedError },
+          { status }
+        );
+      }
+
       return NextResponse.json(data);
     }
 
-    return NextResponse.json({ error: 'إجراء غير صالح.' }, { status: 400 });
+    return NextResponse.json(
+      { error: getErrorMessage('UNKNOWN_ERROR') },
+      { status: 400 }
+    );
   } catch (error) {
     if (IS_PRODUCTION) {
       console.error('API proxy error');
@@ -133,7 +215,7 @@ export async function POST(request: NextRequest) {
       console.error('API proxy error:', error);
     }
     return NextResponse.json(
-      { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
+      { error: getErrorMessage('CONNECTION_ERROR') },
       { status: 500 }
     );
   }

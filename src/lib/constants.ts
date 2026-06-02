@@ -62,6 +62,73 @@ export const STAGE_GRADES: Record<string, { label: string; grades: GradeOption[]
 };
 
 // =====================================================
+// Error Messages — User-Facing
+// Maps error keys (from API / frontend validation)
+// to the Arabic messages shown in the red alert box.
+// =====================================================
+
+export const ERROR_MESSAGES: Record<string, string> = {
+  // ── Frontend validation ──
+  INVALID_TERM: 'فترة دراسية غير صالحة',
+  INVALID_GRADE: 'صف دراسي غير صالح',
+  INVALID_ID: 'الرقم القومي يجب أن يكون 14 رقمًا',
+  MISSING_FIELDS: 'يرجى ملء جميع الحقول المطلوبة.',
+  MISSING_CAPTCHA: 'يرجى إكمال التحقق الأمني أولاً.',
+  CAPTCHA_FAILED: 'فشل التحقق من الكابتشا. يرجى المحاولة مرة أخرى.',
+
+  // ── Backend / GAS errors ──
+  RESULTS_UNAVAILABLE: 'النتائج غير متاحة حالياً',
+  SHEET_NOT_FOUND: 'لم يتم العثور على بيانات هذا الصف',
+  RATE_LIMITED: 'تم إرسال طلبات كثيرة في وقت قصير',
+  CONNECTION_ERROR: 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.',
+  SERVER_ERROR: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
+  SETTINGS_INCOMPLETE: 'إعدادات الشيت غير مكتملة. يرجى التواصل مع الإدارة.',
+  DATA_READ_ERROR: 'حدث خطأ أثناء قراءة البيانات. يرجى المحاولة لاحقاً.',
+  NO_RESULT: 'لم يتم العثور على نتيجة. تأكد من صحة البيانات المدخلة.',
+  FEES_UNPAID: 'المصاريف غير مسددة. يرجى التوجه إلى إدارة المدرسة.',
+  UNKNOWN_ERROR: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+};
+
+/**
+ * Map a raw error string from Google Apps Script
+ * to a standardized error key used by ERROR_MESSAGES.
+ *
+ * GAS may return Arabic strings, English keys, or HTTP status codes.
+ * This function normalises them so the UI always shows the right message.
+ */
+export function mapGasError(rawError: string): string {
+  if (!rawError) return 'UNKNOWN_ERROR';
+  const e = rawError.trim();
+
+  // ── Exact-match keys (if GAS returns an error key) ──
+  if (ERROR_MESSAGES[e]) return e;
+
+  // ── Pattern-match Arabic strings from GAS ──
+  if (/غير صالحة.*فترة|فترة.*غير صالحة|invalid.*term/i.test(e)) return 'INVALID_TERM';
+  if (/صف دراسي غير صالح|غير صالحة.*صف|invalid.*grade|invalid.*class/i.test(e)) return 'INVALID_GRADE';
+  if (/الرقم القومي.*14|14.*رقم|national.*id.*14/i.test(e)) return 'INVALID_ID';
+  if (/غير متاحة|not published|published.*false|_isPublished|B1.*false/i.test(e)) return 'RESULTS_UNAVAILABLE';
+  if (/لم يتم العثور|not found|sheet.*not.*found|no.*sheet/i.test(e)) return 'SHEET_NOT_FOUND';
+  if (/طلبات كثيرة|rate.?limit|too many|throttl/i.test(e)) return 'RATE_LIMITED';
+  if (/إعدادات.*غير مكتملة|settings.*incomplete|missing.*column|لم يتم العثور على عمود/i.test(e)) return 'SETTINGS_INCOMPLETE';
+  if (/خطأ أثناء قراءة|error.*reading|read.*error|corrupted/i.test(e)) return 'DATA_READ_ERROR';
+  if (/لم يتم العثور على نتيجة|no.*result|no.*data.*found|not found.*student/i.test(e)) return 'NO_RESULT';
+  if (/مصاريف|fees|المصاريف/i.test(e)) return 'FEES_UNPAID';
+
+  // ── Fallback: return the raw string as-is so something is always shown ──
+  return e;
+}
+
+/**
+ * Get the user-facing Arabic message for an error key.
+ * Falls back to the raw key if no mapping exists.
+ */
+export function getErrorMessage(keyOrRaw: string): string {
+  const key = mapGasError(keyOrRaw);
+  return ERROR_MESSAGES[key] || keyOrRaw;
+}
+
+// =====================================================
 // Absence & Exclusion Lists
 // =====================================================
 
