@@ -91,16 +91,6 @@ export default function HomePage() {
         </AnimatePresence>
 
       </main>
-
-      {/* Footer */}
-      <footer className="py-4 text-center no-print">
-        <p className="text-xs text-muted-foreground font-semibold">
-          هذه نتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً © {new Date().getFullYear()}
-        </p>
-        <p className="text-xs text-muted-foreground/60 mt-1 font-medium" dir="ltr">
-          Designed by: Mr. Mohamed Khairy
-        </p>
-      </footer>
     </div>
   );
 }

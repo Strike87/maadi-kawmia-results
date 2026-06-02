@@ -63,12 +63,12 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   };
 
   // Helper: get grade info based on percentage
-  const getGradeInfo = (pct: number): { bg: string; text: string } => {
-    if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات' };
-    if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
-    if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات' };
-    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً' };
-    return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع' };
+  const getGradeInfo = (pct: number): { bg: string; text: string; badgeClass: string } => {
+    if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات', badgeClass: 'grade-badge-excellent' };
+    if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً', badgeClass: 'grade-badge-good' };
+    if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات', badgeClass: 'grade-badge-good' };
+    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً', badgeClass: 'grade-badge-pass' };
+    return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع', badgeClass: 'grade-badge-fail' };
   };
 
   // Calculate subject percentage
@@ -98,7 +98,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     >
       <div className="result-container">
         {/* ========== Result Card ========== */}
-        <div className="print-result-card bg-white dark:bg-card rounded-xl sm:rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-border/50">
+        <div className="print-result-card bg-white dark:bg-card rounded-[28px] overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-border/50">
 
           {/* ===== Header Section ===== */}
           <div className="print-header px-4 pt-3 pb-1.5 text-right sm:px-6 sm:pt-5 sm:pb-3">
@@ -115,34 +115,35 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
           {/* ===== Student Data Section ===== */}
           <div className="print-student-data px-3 mt-1.5 sm:px-4 sm:mt-2">
-            {/* "بيانات الطالب" Header Bar */}
-            <div className="print-section-bar bg-[#172033] text-white py-2 px-4 rounded-t-lg text-[13px] font-black text-center sm:text-base sm:py-2.5">
-              بيانات الطالب
+            {/* "بيانات الطالب" Header Bar — Premium gradient */}
+            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-2.5 px-4 rounded-t-lg text-[13px] font-black text-center sm:text-base sm:py-3 flex items-center justify-center gap-2">
+              <span>👨‍🎓</span>
+              <span>بيانات الطالب</span>
             </div>
 
             {/* Student Info Rows */}
             <div className="border border-slate-400 dark:border-border border-t-0 rounded-b-lg overflow-hidden">
               <div className="print-info-row flex text-[13px] border-b border-slate-300 dark:border-border sm:text-sm">
-                <div className="w-[38%] py-2 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-2.5 sm:px-4">
+                <div className="w-[38%] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-3 sm:px-4">
                   الصف الدراسي
                 </div>
-                <div className="w-[62%] py-2 px-3 text-black dark:text-foreground font-black text-right sm:py-2.5 sm:px-4">
+                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-black text-right sm:py-3 sm:px-4">
                   {gradeText}
                 </div>
               </div>
               <div className="print-info-row flex text-[13px] border-b border-slate-300 dark:border-border sm:text-sm">
-                <div className="w-[38%] py-2 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-2.5 sm:px-4">
+                <div className="w-[38%] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-3 sm:px-4">
                   الرقم القومي
                 </div>
-                <div className="w-[62%] py-2 px-3 text-black dark:text-foreground font-black text-right sm:py-2.5 sm:px-4" dir="ltr" style={{ unicodeBidi: 'embed' }}>
+                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-black text-right sm:py-3 sm:px-4" dir="ltr" style={{ unicodeBidi: 'embed' }}>
                   {data.id}
                 </div>
               </div>
               <div className="print-info-row flex text-[13px] sm:text-sm">
-                <div className="w-[38%] py-2 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-2.5 sm:px-4">
+                <div className="w-[38%] py-2.5 px-3 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-300 dark:border-border sm:py-3 sm:px-4">
                   اسم الطالب
                 </div>
-                <div className="w-[62%] py-2 px-3 text-black dark:text-foreground font-black text-right sm:py-2.5 sm:px-4">
+                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-black text-right sm:py-3 sm:px-4">
                   {data.stn}
                 </div>
               </div>
@@ -151,9 +152,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
           {/* ===== Grades Section ===== */}
           <div className="print-grades px-3 mt-2 sm:px-4 sm:mt-3">
-            {/* "درجات الطالب" Header Bar */}
-            <div className="print-section-bar bg-[#172033] text-white py-2 px-4 rounded-t-lg text-[13px] font-black text-center sm:text-base sm:py-2.5">
-              درجات الطالب
+            {/* "درجات الطالب" Header Bar — Premium gradient */}
+            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-2.5 px-4 rounded-t-lg text-[13px] font-black text-center sm:text-base sm:py-3 flex items-center justify-center gap-2">
+              <span>📊</span>
+              <span>درجات الطالب</span>
             </div>
 
             {/* "مواد مضافة للمجموع" Sub-header */}
@@ -173,33 +175,35 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
               {totals.included.map((item, i) => {
                 const pct = getSubjectPct(item);
                 const grade = item.isNum ? getGradeInfo(pct) : null;
+                const isEven = i % 2 === 1;
                 return (
                   <motion.div
                     key={`inc-${i}`}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2, delay: i * 0.04 }}
-                    className={`print-subject-row flex items-center text-[12px] sm:text-[13px] ${
+                    className={`print-subject-row subject-row-transition flex items-center text-[12px] sm:text-[13px] ${
+                      isEven ? 'subject-row-even' : ''
+                    } ${
                       i < totals.included.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                     }`}
                   >
-                    <div className="flex-[3.5] py-2 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-2.5 leading-tight">
+                    <div className="flex-[3.5] py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
                       {item.clean}
                     </div>
-                    <div className="flex-[2.5] py-2 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-2.5 whitespace-nowrap">
+                    <div className="flex-[2.5] py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
                       {formatScore(item)}
                     </div>
                     <div className="flex-[6] py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
                       {grade ? (
                         <>
-                          {/* Mobile: plain colored text — fully visible, no truncation */}
+                          {/* Mobile: colored badge pill */}
                           <span
-                            className="font-black text-[10px] leading-tight text-center sm:hidden"
-                            style={{ color: grade.bg }}
+                            className={`${grade.badgeClass} sm:hidden`}
                           >
                             {grade.text}
                           </span>
-                          {/* Desktop + Print: badge pill */}
+                          {/* Desktop + Print: badge pill with solid bg */}
                           <span
                             className="hidden sm:inline-block text-white py-1 px-3 rounded-full text-[11px] font-black whitespace-nowrap print-badge"
                             style={{ background: grade.bg }}
@@ -215,31 +219,32 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                 );
               })}
 
-              {/* Total Row */}
+              {/* Total Row — Premium style */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: totals.included.length * 0.04 + 0.1 }}
-                className="print-total-row flex items-center text-white text-[12px] font-black sm:text-[13px]"
+                className="print-total-row flex items-center text-white text-[12px] font-black sm:text-[14px]"
                 style={{ background: totalColor }}
               >
-                <div className="flex-[3.5] py-2 px-2 text-right border-l border-white/20 sm:px-4 sm:py-3">
+                <div className="flex-[3.5] py-2.5 px-2 text-right border-l border-white/20 sm:px-4 sm:py-3">
                   المجموع الكلي
                 </div>
-                <div className="flex-[2.5] py-2 px-1.5 text-center border-l border-white/20 sm:px-3 sm:py-3 whitespace-nowrap">
+                <div className="flex-[2.5] py-2.5 px-1.5 text-center border-l border-white/20 sm:px-3 sm:py-3 whitespace-nowrap font-black text-[14px] sm:text-[18px]">
                   {totals.totalDisplay} / {totals.totalMax}
                 </div>
                 <div className="flex-[6] py-1.5 px-2 flex items-center justify-center gap-1.5 sm:px-3 sm:gap-2">
                   {/* Mobile: plain text */}
-                  <span className="font-black text-[10px] sm:hidden">{totalLabel}</span>
+                  <span className="font-black text-[11px] sm:hidden">{totalLabel}</span>
                   <span className="text-white/80 text-[10px] font-black sm:hidden">{totals.totalPct}%</span>
-                  {/* Desktop + Print: badge + percentage */}
-                  <span className="hidden sm:inline-block bg-white/25 text-white py-0.5 px-3 rounded-full text-[11px] font-black whitespace-nowrap print-badge">
+                  {/* Desktop + Print: badge + percentage with trophy */}
+                  <span className="hidden sm:inline-block bg-white/25 text-white py-0.5 px-3 rounded-full text-[12px] font-black whitespace-nowrap print-badge">
                     {totalLabel}
                   </span>
-                  <span className="hidden sm:inline text-white/90 text-[11px] font-black">
+                  <span className="hidden sm:inline text-white/90 text-[13px] font-black">
                     {totals.totalPct}%
                   </span>
+                  <span className="hidden sm:inline text-[14px]">🏆</span>
                 </div>
               </motion.div>
             </div>
@@ -273,25 +278,27 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                 {totals.excluded.map((item, i) => {
                   const pct = getSubjectPct(item);
                   const grade = item.isNum ? getGradeInfo(pct) : null;
+                  const isEven = i % 2 === 1;
                   return (
                     <div
                       key={`exc-${i}`}
-                      className={`print-subject-row flex items-center text-[12px] sm:text-[13px] ${
+                      className={`print-subject-row subject-row-transition flex items-center text-[12px] sm:text-[13px] ${
+                        isEven ? 'subject-row-even' : ''
+                      } ${
                         i < totals.excluded.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                       }`}
                     >
-                      <div className="flex-[3.5] py-2 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-2.5 leading-tight">
+                      <div className="flex-[3.5] py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
                         {item.clean}
                       </div>
-                      <div className="flex-[2.5] py-2 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-2.5 whitespace-nowrap">
+                      <div className="flex-[2.5] py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
                         {formatScore(item)}
                       </div>
                       <div className="flex-[6] py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
                         {grade ? (
                           <>
                             <span
-                              className="font-black text-[10px] leading-tight text-center sm:hidden"
-                              style={{ color: grade.bg }}
+                              className={`${grade.badgeClass} sm:hidden`}
                             >
                               {grade.text}
                             </span>
@@ -313,9 +320,9 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             </div>
           )}
 
-          {/* ===== Disclaimer Footer ===== */}
-          <div className="print-disclaimer px-4 py-3 text-center sm:px-6 sm:py-4">
-            <p className="text-[11px] font-black text-black dark:text-foreground sm:text-xs">
+          {/* ===== Disclaimer Footer (inside card — single copy) ===== */}
+          <div className="print-disclaimer px-4 py-3 text-center sm:px-6 sm:py-4 border-t border-slate-100 dark:border-border/30 mt-2">
+            <p className="text-[11px] font-black text-slate-500 dark:text-muted-foreground sm:text-xs">
               هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
             </p>
             <p className="text-[9px] font-extrabold text-slate-400 mt-1 sm:text-[10px]" dir="ltr">
@@ -326,7 +333,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
         {/* ===== Print Button (hidden in print) ===== */}
         <button
-          className="print-btn no-print w-full mt-3 py-3.5 rounded-xl text-white font-bold text-base cursor-pointer transition-all duration-300 hover:opacity-90 active:scale-[0.98] sm:mt-4 sm:py-4 sm:text-lg"
+          className="print-btn no-print btn-tap w-full mt-3 py-3.5 rounded-2xl text-white font-bold text-base cursor-pointer transition-all duration-300 hover:opacity-90 hover:shadow-lg sm:mt-4 sm:py-4 sm:text-lg"
           onClick={handlePrint}
           style={{ background: '#28a745' }}
         >
@@ -342,26 +349,26 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         <Button
           onClick={handleCopy}
           variant="outline"
-          className={`flex-1 h-12 rounded-xl font-bold gap-2 transition-all duration-300 text-sm sm:h-13 sm:text-base ${
+          className={`btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 transition-all duration-300 text-base sm:h-14 sm:text-lg ${
             copied ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : ''
           }`}
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
           {copied ? 'تم النسخ' : 'نسخ'}
         </Button>
         <Button
           onClick={handleWhatsApp}
-          className="flex-1 h-12 rounded-xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white text-sm sm:h-13 sm:text-base"
+          className="btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white text-base sm:h-14 sm:text-lg"
         >
-          <MessageCircle className="h-4 w-4" />
+          <MessageCircle className="h-5 w-5" />
           واتساب
         </Button>
         <Button
           onClick={onNewSearch}
-          className="flex-1 h-12 rounded-xl font-bold gap-2 text-white text-sm sm:h-13 sm:text-base"
+          className="btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 text-white text-base sm:h-14 sm:text-lg"
           style={{ background: '#001d3d' }}
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-5 w-5" />
           بحث جديد
         </Button>
       </div>

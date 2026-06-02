@@ -10,7 +10,6 @@ import {
   ChevronDown,
   Hash,
   AlertCircle,
-  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -439,11 +438,6 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
             )}
           </Button>
 
-          {/* Security Note */}
-          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <Shield className="h-3 w-3" />
-            <span className="font-semibold">بياناتك محمية ولا يتم تخزينها</span>
-          </div>
         </CardContent>
       </Card>
     </motion.div>
