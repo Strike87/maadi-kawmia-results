@@ -1,8 +1,6 @@
 // =====================================================
-// Sheet Names - Constants (no @ suffix)
-// These are the ONLY valid sheet names the app uses.
-// The API proxy automatically tries with @ appended
-// to handle sheets that use @ to hide from direct access.
+// Sheet Names - Constants
+// Sheet names must be exactly: 1, 2, 3, 4, 5, 6, 7, 8, 10, 11S, 11A
 // =====================================================
 
 export const SHEET_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8', '10', '11S', '11A'] as const;
@@ -139,11 +137,6 @@ export interface ComputedTotals {
 // Utility Functions
 // =====================================================
 
-/** Strip trailing @ signs from grade / sheet names (e.g. "7@" → "7") */
-export function stripAt(val: string): string {
-  return String(val || '').replace(/@+$/, '');
-}
-
 export function normalizeArabic(str: string): string {
   return String(str || '')
     .replace(/[أإآ]/g, 'ا')
@@ -165,8 +158,7 @@ export function isAbsenceCode(value: string): boolean {
 }
 
 export function usesAdvancedScale(data: StudentResult): boolean {
-  const clClean = stripAt(data?.cl || '');
-  return [clClean, data?.clLabel]
+  return [data?.cl, data?.clLabel]
     .map(normalizeArabic)
     .some(
       (v) =>
@@ -262,7 +254,7 @@ export function buildShareLines(data: StudentResult, bold: boolean): string[] {
   const mark = bold ? '*' : '';
   const totals = computeTotals(data);
   const adv = usesAdvancedScale(data);
-  const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
+  const gradeText = data.clLabel || GRADE_MAP[data.cl] || data.cl;
 
   const lines = [
     `${mark}نتيجة امتحانات مدرسة حدائق المعادي القومية${mark}`,

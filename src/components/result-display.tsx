@@ -20,7 +20,6 @@ import {
   isAbsenceCode,
   buildShareLines,
   GRADE_MAP,
-  stripAt,
 } from '@/lib/constants';
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -35,7 +34,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const adv = usesAdvancedScale(data);
   const totals: ComputedTotals = computeTotals(data);
   const totalLabel = gradeLabel(totals.totalPct, adv);
-  const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
+  const gradeText = data.clLabel || GRADE_MAP[data.cl] || data.cl;
 
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
