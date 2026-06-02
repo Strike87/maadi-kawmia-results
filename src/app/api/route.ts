@@ -8,6 +8,8 @@ const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 async function verifyTurnstile(token: string): Promise<boolean> {
   if (!TURNSTILE_SECRET_KEY) {
     // In development without a secret key, skip verification
@@ -31,7 +33,12 @@ async function verifyTurnstile(token: string): Promise<boolean> {
     const data = await res.json();
     return data.success === true;
   } catch (error) {
-    console.error('Turnstile verification error:', error);
+    // Hide detailed error in production
+    if (IS_PRODUCTION) {
+      console.error('Turnstile verification failed');
+    } else {
+      console.error('Turnstile verification error:', error);
+    }
     return false;
   }
 }
@@ -53,7 +60,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (!res.ok) {
-        throw new Error(`Google API error: ${res.status}`);
+        // Hide detailed error in production
+        if (IS_PRODUCTION) {
+          console.error('Google API error');
+        } else {
+          console.error(`Google API error: ${res.status}`);
+        }
+        return NextResponse.json(
+          { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
+          { status: 502 }
+        );
       }
 
       const data = await res.json();
@@ -97,7 +113,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (!res.ok) {
-        throw new Error(`Google API error: ${res.status}`);
+        // Hide detailed error in production
+        if (IS_PRODUCTION) {
+          console.error('Google API error');
+        } else {
+          console.error(`Google API error: ${res.status}`);
+        }
+        return NextResponse.json(
+          { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
+          { status: 502 }
+        );
       }
 
       const data = await res.json();
@@ -106,11 +131,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'إجراء غير صالح.' }, { status: 400 });
   } catch (error) {
-    console.error('API proxy error:', error);
+    // Hide detailed error in production — never expose stack traces
+    if (IS_PRODUCTION) {
+      console.error('API proxy error');
+    } else {
+      console.error('API proxy error:', error);
+    }
     return NextResponse.json(
       { error: 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' },
       { status: 500 }
     );
   }
 }
-
