@@ -180,18 +180,33 @@ export async function POST(request: NextRequest) {
       }
 
       if (data.error) {
-        const mappedError = getErrorMessage(String(data.error));
+        const rawError = String(data.error);
+
+        // ── Special case: "لم يتم العثور على بيانات هذا الصف" ──
+        // GAS returns this SAME error for both:
+        //   1. Sheet tab not found (truly invalid grade)
+        //   2. Student not found in the sheet (valid grade, wrong ID)
+        // Since we already validated the grade above (cls in GRADE_MAP),
+        // if we reach here, the grade IS valid → the error must be
+        // "student not found", NOT "sheet not found".
+        if (/لم يتم العثور/.test(rawError) && cls in GRADE_MAP) {
+          return NextResponse.json(
+            { error: getErrorMessage('NO_RESULT') },
+            { status: 404 }
+          );
+        }
+
+        const mappedError = getErrorMessage(rawError);
         // Determine appropriate HTTP status based on error type
-        const errorKey = String(data.error);
         let status = 400;
 
-        if (/غير متاحة|not published|_isPublished/i.test(errorKey)) {
+        if (/غير متاحة|not published|_isPublished/i.test(rawError)) {
           status = 403;
-        } else if (/طلبات كثيرة|rate.?limit|too many/i.test(errorKey)) {
+        } else if (/طلبات كثيرة|rate.?limit|too many/i.test(rawError)) {
           status = 429;
-        } else if (/لم يتم العثور على نتيجة|no.*result/i.test(errorKey)) {
+        } else if (/لم يتم العثور|no.*result/i.test(rawError)) {
           status = 404;
-        } else if (/مصاريف|fees/i.test(errorKey)) {
+        } else if (/مصاريف|fees/i.test(rawError)) {
           status = 403;
         }
 
