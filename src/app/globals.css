@@ -179,9 +179,9 @@ select option {
   text-align: right;
 }
 
-/* ========== Print Styles - A4 Portrait Full Page ========== */
+/* ========== Print Styles - A4 Portrait, Single Page ========== */
 @media print {
-  /* Page setup — hide browser headers/footers (URL, date, page number) */
+  /* Remove browser headers/footers (URL, date, page number) */
   @page {
     size: A4 portrait;
     margin: 0;
@@ -189,15 +189,15 @@ select option {
 
   /* Reset root */
   html, body {
-    width: 100% !important;
-    height: auto !important;
+    width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    /* Hide the browser's default header (URL) and footer (date/page) */
+    overflow: hidden !important;
   }
 
   /* Hide all non-result elements */
@@ -245,14 +245,19 @@ select option {
     padding: 0 !important;
   }
 
-  /* The main result card — add padding for the @page margin: 0 approach */
+  /* The main result card — edge-to-edge with internal margins */
   .print-result-card {
     max-width: 100% !important;
     width: 100% !important;
+    height: 297mm !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    padding: 8mm 10mm !important;
+    padding: 6mm 8mm !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   /* Force all colors to print */
@@ -261,17 +266,12 @@ select option {
     print-color-adjust: exact !important;
   }
 
-  /* Fix font sizes for print — use readable sizes */
-  .print-result-card {
-    font-size: 12px !important;
-  }
-
-  /* Print: show full grade labels (not mobile short ones) */
+  /* Print: show desktop badge version (not mobile plain text) */
   .print-result-card .sm\:hidden {
     display: none !important;
   }
-  .print-result-card .hidden {
-    display: inline !important;
+  .print-result-card .hidden.sm\:inline-block {
+    display: inline-block !important;
   }
 
   /* Fix column proportions for print */
@@ -285,25 +285,35 @@ select option {
     flex: 4 !important;
   }
 
-  /* Fix table rows for print */
-  .print-result-card .flex.items-center {
-    break-inside: avoid !important;
+  /* Compact spacing for print */
+  .print-result-card [class*="mt-"] {
+    margin-top: 1.5mm !important;
+  }
+
+  .print-result-card [class*="py-"] {
+    padding-top: 1mm !important;
+    padding-bottom: 1mm !important;
+  }
+
+  .print-result-card [class*="px-"] {
+    padding-left: 3mm !important;
+    padding-right: 3mm !important;
   }
 
   /* Ensure disclaimer is visible in print */
   .print-disclaimer {
-    page-break-inside: avoid !important;
-    padding: 16px 24px !important;
+    padding: 3mm 3mm !important;
   }
 
-  /* Hide percentage bar in print (data already shown in total row) */
+  /* Hide percentage bar in print (data already in total row) */
   .print-percentage-bar {
     display: none !important;
   }
 
-  /* Prevent page breaks inside the result card */
+  /* Force single page — no page breaks */
   .print-result-card {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
