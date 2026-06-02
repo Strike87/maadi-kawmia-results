@@ -337,7 +337,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
             <Input
               id="nationalId"
               type="tel"
-              dir="rtl"
+              dir="ltr"
               inputMode="numeric"
               maxLength={14}
               placeholder="أدخل الرقم القومي هنا"
@@ -346,7 +346,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !isLoading && canSearch) handleSearch();
               }}
-              className={`h-12 text-base text-right font-mono tracking-wider ${
+              className={`h-12 text-base text-left font-mono tracking-wider ${
                 idLength > 0 && !isIdComplete
                   ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/20'
                   : isIdComplete
@@ -401,5 +401,6 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     </motion.div>
   );
 }
+
 
 
