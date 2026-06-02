@@ -177,10 +177,9 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
         return;
       }
 
-      // ── Extra check: empty student data (ID not found) ──
-      // GAS may return sheet structure even without a matching student.
-      // The key indicator is an empty student name (stn) or empty scores.
-      if (!data.stn && (!data.scores || data.scores.length === 0)) {
+      // ── Extra check: no student found (ID not in database) ──
+      // If student name is missing, there is no valid result.
+      if (!data.stn || !String(data.stn).trim()) {
         setError(getErrorMessage('NO_RESULT'));
         return;
       }

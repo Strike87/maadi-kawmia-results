@@ -216,13 +216,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // ── Check for empty / no-student result ──
-      // GAS may return sheet structure (headers, maxScores) even when
-      // the student is not found. The key indicator is an empty student
-      // name (stn) or empty scores array.
+      // ── Check for no-student result ──
+      // If the student name (stn) is missing, there is no valid result —
+      // regardless of whether headers/scores are present.
+      // GAS may return sheet structure even without a matching student.
       const stn = String(data.stn || '').trim();
-      const scores = data.scores as string[] | undefined;
-      if (!stn && (!scores || scores.length === 0)) {
+      if (!stn) {
         return NextResponse.json(
           { error: getErrorMessage('NO_RESULT') },
           { status: 404 }
