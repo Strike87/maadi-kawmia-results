@@ -36,7 +36,6 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const totals: ComputedTotals = computeTotals(data);
   const totalLabel = gradeLabel(totals.totalPct, adv);
   const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
-  const isPassed = totals.totalPct >= 50;
 
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
@@ -63,27 +62,13 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     window.print();
   };
 
-  // Helper: get grade badge color based on percentage
-  const getBadgeStyle = (pct: number, isAdv: boolean): { bg: string; text: string } => {
-    if (pct >= 85) return { bg: '#2563eb', text: 'يفوق التوقعات' };
-    if (isAdv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
-    if (!isAdv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات' };
-    if (pct >= 50) return { bg: '#d97706', text: 'يلبي التوقعات أحياناً' };
-    return { bg: '#dc2626', text: 'أقل من المتوقع' };
-  };
-
-  const getBadgeStyleAdv = (pct: number, isAdv: boolean): { bg: string; text: string } => {
-    if (pct >= 85) return { bg: '#2563eb', text: 'ممتاز' };
-    if (isAdv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
-    if (!isAdv && pct >= 65) return { bg: '#16a34a', text: 'جيد' };
-    if (pct >= 50) return { bg: '#d97706', text: 'مقبول' };
-    return { bg: '#dc2626', text: 'دون المستوى' };
-  };
-
-  // For primary grades use the simpler labels
-  const getGradeBadge = (pct: number) => {
-    if (adv) return getBadgeStyleAdv(pct, adv);
-    return getBadgeStyle(pct, adv);
+  // Helper: get grade badge based on percentage
+  const getGradeBadge = (pct: number): { bg: string; text: string } => {
+    if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات' };
+    if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
+    if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات' };
+    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً' };
+    return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع' };
   };
 
   // Calculate subject percentage
@@ -114,6 +99,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
       <div className="result-container">
         {/* ========== Result Card ========== */}
         <div
+          className="print-result-card"
           style={{
             background: '#fff',
             borderRadius: '12px',
@@ -186,101 +172,31 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
               }}
             >
               {/* Row: الصف الدراسي */}
-              <div
-                style={{
-                  display: 'flex',
-                  borderBottom: '1px solid #999',
-                  fontSize: '14px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '40%',
-                    padding: '10px 14px',
-                    color: '#334155',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                    borderLeft: '1px solid #999',
-                  }}
-                >
+              <div style={{ display: 'flex', borderBottom: '1px solid #999', fontSize: '14px' }}>
+                <div style={{ width: '40%', padding: '10px 14px', color: '#334155', fontWeight: 900, textAlign: 'right', borderLeft: '1px solid #999' }}>
                   الصف الدراسي
                 </div>
-                <div
-                  style={{
-                    width: '60%',
-                    padding: '10px 14px',
-                    color: '#000',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                  }}
-                >
+                <div style={{ width: '60%', padding: '10px 14px', color: '#000', fontWeight: 900, textAlign: 'right' }}>
                   {gradeText}
                 </div>
               </div>
 
               {/* Row: الرقم القومي */}
-              <div
-                style={{
-                  display: 'flex',
-                  borderBottom: '1px solid #999',
-                  fontSize: '14px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '40%',
-                    padding: '10px 14px',
-                    color: '#334155',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                    borderLeft: '1px solid #999',
-                  }}
-                >
+              <div style={{ display: 'flex', borderBottom: '1px solid #999', fontSize: '14px' }}>
+                <div style={{ width: '40%', padding: '10px 14px', color: '#334155', fontWeight: 900, textAlign: 'right', borderLeft: '1px solid #999' }}>
                   الرقم القومي
                 </div>
-                <div
-                  style={{
-                    width: '60%',
-                    padding: '10px 14px',
-                    color: '#000',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                    direction: 'ltr',
-                    unicodeBidi: 'embed',
-                  }}
-                >
+                <div style={{ width: '60%', padding: '10px 14px', color: '#000', fontWeight: 900, textAlign: 'right', direction: 'ltr', unicodeBidi: 'embed' }}>
                   {data.id}
                 </div>
               </div>
 
               {/* Row: اسم الطالب */}
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '14px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '40%',
-                    padding: '10px 14px',
-                    color: '#334155',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                    borderLeft: '1px solid #999',
-                  }}
-                >
+              <div style={{ display: 'flex', fontSize: '14px' }}>
+                <div style={{ width: '40%', padding: '10px 14px', color: '#334155', fontWeight: 900, textAlign: 'right', borderLeft: '1px solid #999' }}>
                   اسم الطالب
                 </div>
-                <div
-                  style={{
-                    width: '60%',
-                    padding: '10px 14px',
-                    color: '#000',
-                    fontWeight: 900,
-                    textAlign: 'right',
-                  }}
-                >
+                <div style={{ width: '60%', padding: '10px 14px', color: '#000', fontWeight: 900, textAlign: 'right' }}>
                   {data.stn}
                 </div>
               </div>
@@ -319,33 +235,14 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             </div>
 
             {/* Table Header Row */}
-            <div
-              style={{
-                display: 'flex',
-                background: '#334155',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 900,
-              }}
-            >
-              <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>
-                المادة
-              </div>
-              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>
-                الدرجة
-              </div>
-              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>
-                التقدير
-              </div>
+            <div style={{ display: 'flex', background: '#334155', color: '#fff', fontSize: '14px', fontWeight: 900 }}>
+              <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>المادة</div>
+              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>الدرجة</div>
+              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>التقدير</div>
             </div>
 
             {/* Subject Rows */}
-            <div
-              style={{
-                border: '1px solid #999',
-                borderTop: 'none',
-              }}
-            >
+            <div style={{ border: '1px solid #999', borderTop: 'none' }}>
               {totals.included.map((item, i) => {
                 const pct = getSubjectPct(item);
                 const badge = item.isNum ? getGradeBadge(pct) : null;
@@ -362,58 +259,19 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                       background: '#fff',
                     }}
                   >
-                    <div
-                      style={{
-                        width: '50%',
-                        padding: '10px 14px',
-                        color: '#334155',
-                        fontWeight: 900,
-                        textAlign: 'right',
-                        borderLeft: '1px solid #e5e7eb',
-                      }}
-                    >
+                    <div style={{ width: '50%', padding: '10px 14px', color: '#334155', fontWeight: 900, textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>
                       {item.clean}
                     </div>
-                    <div
-                      style={{
-                        width: '25%',
-                        padding: '10px 14px',
-                        color: '#000',
-                        fontWeight: 900,
-                        textAlign: 'center',
-                        borderLeft: '1px solid #e5e7eb',
-                      }}
-                    >
+                    <div style={{ width: '25%', padding: '10px 14px', color: '#000', fontWeight: 900, textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                       {formatScore(item)}
                     </div>
-                    <div
-                      style={{
-                        width: '25%',
-                        padding: '6px 8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
+                    <div style={{ width: '25%', padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {badge ? (
-                        <span
-                          style={{
-                            background: badge.bg,
-                            color: '#fff',
-                            padding: '4px 10px',
-                            borderRadius: '20px',
-                            fontSize: '11px',
-                            fontWeight: 900,
-                            whiteSpace: 'nowrap',
-                            display: 'inline-block',
-                          }}
-                        >
+                        <span style={{ background: badge.bg, color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 900, whiteSpace: 'nowrap', display: 'inline-block' }}>
                           {badge.text}
                         </span>
                       ) : (
-                        <span style={{ color: '#999', fontSize: '13px' }}>
-                          {item.rawScore}
-                        </span>
+                        <span style={{ color: '#999', fontSize: '13px' }}>{item.rawScore}</span>
                       )}
                     </div>
                   </motion.div>
@@ -440,17 +298,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                   {totals.totalDisplay} / {totals.totalMax}
                 </div>
                 <div style={{ width: '25%', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span
-                    style={{
-                      background: 'rgba(255,255,255,0.25)',
-                      color: '#fff',
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: 900,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 900, whiteSpace: 'nowrap' }}>
                     {totalLabel}
                   </span>
                 </div>
@@ -461,51 +309,15 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           {/* ===== Excluded Subjects Section ===== */}
           {totals.excluded.length > 0 && (
             <div style={{ padding: '0 16px', marginTop: '8px' }}>
-              {/* "مواد غير مضافة للمجموع" Sub-header */}
-              <div
-                style={{
-                  background: '#475569',
-                  color: '#fff',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: 900,
-                  textAlign: 'center',
-                  borderRadius: '8px 8px 0 0',
-                }}
-              >
+              <div style={{ background: '#475569', color: '#fff', padding: '8px 16px', fontSize: '14px', fontWeight: 900, textAlign: 'center', borderRadius: '8px 8px 0 0' }}>
                 مواد غير مضافة للمجموع
               </div>
-
-              {/* Table Header Row */}
-              <div
-                style={{
-                  display: 'flex',
-                  background: '#334155',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: 900,
-                }}
-              >
-                <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>
-                  المادة
-                </div>
-                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>
-                  الدرجة
-                </div>
-                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>
-                  التقدير
-                </div>
+              <div style={{ display: 'flex', background: '#334155', color: '#fff', fontSize: '14px', fontWeight: 900 }}>
+                <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>المادة</div>
+                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>الدرجة</div>
+                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>التقدير</div>
               </div>
-
-              {/* Excluded Subject Rows */}
-              <div
-                style={{
-                  border: '1px solid #999',
-                  borderTop: 'none',
-                  borderRadius: '0 0 8px 8px',
-                  overflow: 'hidden',
-                }}
-              >
+              <div style={{ border: '1px solid #999', borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
                 {totals.excluded.map((item, i) => {
                   const pct = getSubjectPct(item);
                   const badge = item.isNum ? getGradeBadge(pct) : null;
@@ -519,57 +331,19 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                         background: '#fff',
                       }}
                     >
-                      <div
-                        style={{
-                          width: '50%',
-                          padding: '10px 14px',
-                          color: '#334155',
-                          fontWeight: 900,
-                          textAlign: 'right',
-                          borderLeft: '1px solid #e5e7eb',
-                        }}
-                      >
+                      <div style={{ width: '50%', padding: '10px 14px', color: '#334155', fontWeight: 900, textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>
                         {item.clean}
                       </div>
-                      <div
-                        style={{
-                          width: '25%',
-                          padding: '10px 14px',
-                          color: '#000',
-                          fontWeight: 900,
-                          textAlign: 'center',
-                          borderLeft: '1px solid #e5e7eb',
-                        }}
-                      >
+                      <div style={{ width: '25%', padding: '10px 14px', color: '#000', fontWeight: 900, textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                         {formatScore(item)}
                       </div>
-                      <div
-                        style={{
-                          width: '25%',
-                          padding: '6px 8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
+                      <div style={{ width: '25%', padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {badge ? (
-                          <span
-                            style={{
-                              background: badge.bg,
-                              color: '#fff',
-                              padding: '4px 10px',
-                              borderRadius: '20px',
-                              fontSize: '11px',
-                              fontWeight: 900,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
+                          <span style={{ background: badge.bg, color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 900, whiteSpace: 'nowrap' }}>
                             {badge.text}
                           </span>
                         ) : (
-                          <span style={{ color: '#999', fontSize: '13px' }}>
-                            {item.rawScore}
-                          </span>
+                          <span style={{ color: '#999', fontSize: '13px' }}>{item.rawScore}</span>
                         )}
                       </div>
                     </div>
@@ -580,33 +354,19 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           )}
 
           {/* ===== Disclaimer Footer ===== */}
-          <div style={{ padding: '16px 24px', textAlign: 'center' }}>
-            <p
-              style={{
-                fontSize: '13px',
-                fontWeight: 900,
-                color: '#000',
-                margin: 0,
-              }}
-            >
+          <div className="print-disclaimer" style={{ padding: '16px 24px', textAlign: 'center' }}>
+            <p style={{ fontSize: '13px', fontWeight: 900, color: '#000', margin: 0 }}>
               هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
             </p>
-            <p
-              style={{
-                fontSize: '10px',
-                fontWeight: 800,
-                color: '#555',
-                margin: '8px 0 0',
-                direction: 'ltr',
-              }}
-            >
+            <p style={{ fontSize: '10px', fontWeight: 800, color: '#555', margin: '8px 0 0', direction: 'ltr' }}>
               Designed by : Mr.Mohamed Khairy
             </p>
           </div>
         </div>
 
-        {/* ===== Print Button ===== */}
+        {/* ===== Print Button (hidden in print) ===== */}
         <button
+          className="print-btn no-print"
           onClick={handlePrint}
           style={{
             marginTop: '12px',
@@ -628,8 +388,8 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         </button>
       </div>
 
-      {/* ===== Extra Action Buttons (hidden from print) ===== */}
-      <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      {/* ===== Action Buttons (hidden from print) ===== */}
+      <div className="result-actions no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <Button
           onClick={handleCopy}
           variant="outline"
