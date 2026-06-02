@@ -171,7 +171,9 @@ export async function POST(request: NextRequest) {
       // ── Parse GAS response and map any error ──
       let data: Record<string, unknown>;
       try {
-        data = await res.json();
+        const rawText = await res.text();
+        console.log('[API] GAS raw response:', rawText.substring(0, 300));
+        data = JSON.parse(rawText);
       } catch {
         return NextResponse.json(
           { error: getErrorMessage('DATA_READ_ERROR') },
