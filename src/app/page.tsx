@@ -36,31 +36,37 @@ export default function HomePage() {
 
         {/* Content */}
         <AnimatePresence mode="wait">
-          {isLoading && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LoadingAnimation />
-            </motion.div>
-          )}
-
-          {!isLoading && showSearch && (
+          {showSearch && (
             <motion.div
               key="search"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
+              className="relative"
             >
+              {/* Search form stays mounted during loading so error state is preserved */}
               <SearchForm onResult={handleResult} onLoading={handleLoading} />
+
+              {/* Loading overlay on top of search form */}
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    key="loading-overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-sm rounded-xl"
+                  >
+                    <LoadingAnimation />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
-          {!isLoading && !showSearch && result && (
+          {!showSearch && result && (
             <motion.div
               key="result"
               initial={{ opacity: 0 }}
