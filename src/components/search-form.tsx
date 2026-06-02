@@ -36,16 +36,19 @@ import { Turnstile } from '@/components/turnstile';
 interface SearchFormProps {
   onResult: (data: StudentResult) => void;
   onLoading: (loading: boolean) => void;
+  onError: (errorMsg: string) => void;
+  initialError?: string;
 }
 
-export function SearchForm({ onResult, onLoading }: SearchFormProps) {
+export function SearchForm({ onResult, onLoading, onError, initialError = '' }: SearchFormProps) {
   const [terms, setTerms] = useState<string[]>([]);
   const [activeSheets, setActiveSheets] = useState<string[]>([]);
   const [selectedTerm, setSelectedTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [nationalId, setNationalId] = useState('');
-  const [error, setError] = useState('');
+  // Use initialError from page.tsx so error survives component remount
+  const [error, setError] = useState(initialError);
   const [warning, setWarning] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [termsLoaded, setTermsLoaded] = useState(false);
@@ -108,48 +111,65 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
     ? (filteredStages[selectedStage]?.grades || [])
     : [];
 
+  // Sync error from parent (page.tsx) — e.g. after remount
+  useEffect(() => {
+    if (initialError) setError(initialError);
+  }, [initialError]);
+
+  // Helper: set error locally + notify parent
+  const showError = (msg: string) => {
+    setError(msg);
+    onError(msg);
+  };
+
+  // Clear error locally + notify parent
+  const clearError = () => {
+    setError('');
+    onError('');
+  };
+
   // Handle national ID input
   const handleIdChange = (value: string) => {
     const cleaned = normalizeId(value);
     setNationalId(cleaned);
-    setError('');
+    clearError();
   };
 
   // Handle search
   const handleSearch = async () => {
-    setError('');
+    clearError();
     setWarning('');
 
     // ── Frontend validation ──
     if (!selectedTerm) {
-      setError(getErrorMessage('MISSING_FIELDS'));
+      showError(getErrorMessage('MISSING_FIELDS'));
       return;
     }
 
     // Validate that the selected term is in the fetched terms list
     if (terms.length > 0 && !terms.includes(selectedTerm)) {
-      setError(getErrorMessage('INVALID_TERM'));
+      showError(getErrorMessage('INVALID_TERM'));
       return;
     }
 
     if (!selectedGrade) {
-      setError(getErrorMessage('MISSING_FIELDS'));
+      showError(getErrorMessage('MISSING_FIELDS'));
       return;
     }
 
     // Validate that the selected grade exists in GRADE_MAP
     if (!(selectedGrade in GRADE_MAP)) {
-      setError(getErrorMessage('INVALID_GRADE'));
+      showError(getErrorMessage('INVALID_GRADE'));
       return;
     }
 
     if (!/^[0-9]{14}$/.test(nationalId)) {
-      setError(getErrorMessage('INVALID_ID'));
+      showError(getErrorMessage('INVALID_ID'));
       return;
     }
 
     if (!captchaToken) {
-      setError(getErrorMessage('MISSING_CAPTCHA'));
+      showError(getErrorMessage('MISSING_CAPTCHA'));
       return;
     }
 
@@ -172,21 +192,21 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
       const data = await res.json();
 
       if (data.error) {
-        // Error already mapped by API route, just display it
-        setError(data.error);
+        // Error already mapped by API route — display and notify parent
+        showError(data.error);
         return;
       }
 
       // ── Extra check: no student found (ID not in database) ──
       // If student name is missing, there is no valid result.
       if (!data.stn || !String(data.stn).trim()) {
-        setError(getErrorMessage('NO_RESULT'));
+        showError(getErrorMessage('NO_RESULT'));
         return;
       }
 
       onResult(data);
     } catch {
-      setError(getErrorMessage('CONNECTION_ERROR'));
+      showError(getErrorMessage('CONNECTION_ERROR'));
     } finally {
       setIsLoading(false);
       onLoading(false);
@@ -265,7 +285,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                   setSelectedTerm(e.target.value);
                   setSelectedStage('');
                   setSelectedGrade('');
-                  setError('');
+                  clearError();
                 }}
                 disabled={!termsLoaded}
                 className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -293,7 +313,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                 onChange={(e) => {
                   setSelectedStage(e.target.value);
                   setSelectedGrade('');
-                  setError('');
+                  clearError();
                 }}
                 disabled={!selectedTerm}
                 className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -320,7 +340,7 @@ export function SearchForm({ onResult, onLoading }: SearchFormProps) {
                 value={selectedGrade}
                 onChange={(e) => {
                   setSelectedGrade(e.target.value);
-                  setError('');
+                  clearError();
                 }}
                 disabled={!selectedStage}
                 className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
