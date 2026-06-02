@@ -93,7 +93,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="w-full max-w-lg mx-auto space-y-4"
+      className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4"
     >
       <div className="result-container">
         {/* ========== Result Card ========== */}
@@ -108,44 +108,47 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           }}
         >
           {/* ===== Header Section ===== */}
-          <div style={{ padding: '20px 24px 12px', textAlign: 'right' }}>
+          <div style={{ padding: '14px 16px 10px', textAlign: 'right' }} className="sm:!p-[20px_24px_12px]">
             <h2
               style={{
-                fontSize: '18px',
+                fontSize: '16px',
                 fontWeight: 900,
                 color: '#101827',
                 margin: 0,
                 lineHeight: 1.4,
               }}
+              className="sm:!text-[18px]"
             >
               نتائج الامتحانات
             </h2>
             <p
               style={{
-                fontSize: '13px',
+                fontSize: '11px',
                 fontWeight: 800,
                 color: '#64748b',
                 margin: '4px 0 0',
                 direction: 'ltr',
                 textAlign: 'right',
               }}
+              className="sm:!text-[13px]"
             >
               Hadayek El-maadi El-kawmia school
             </p>
             <p
               style={{
-                fontSize: '16px',
+                fontSize: '14px',
                 fontWeight: 900,
                 color: '#000',
                 margin: '6px 0 0',
               }}
+              className="sm:!text-[16px]"
             >
               {data.termName || 'أخر العام 2026'}
             </p>
           </div>
 
           {/* ===== Student Data Section ===== */}
-          <div style={{ padding: '0 16px', marginTop: '8px' }}>
+          <div style={{ padding: '0 12px', marginTop: '8px' }} className="sm:!px-4">
             {/* "بيانات الطالب" Header Bar */}
             <div
               style={{
@@ -203,7 +206,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           </div>
 
           {/* ===== Grades Section ===== */}
-          <div style={{ padding: '0 16px', marginTop: '12px' }}>
+          <div style={{ padding: '0 12px', marginTop: '12px' }} className="sm:!px-4">
             {/* "درجات الطالب" Header Bar */}
             <div
               style={{
@@ -307,7 +310,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
           {/* ===== Excluded Subjects Section ===== */}
           {totals.excluded.length > 0 && (
-            <div style={{ padding: '0 16px', marginTop: '8px' }}>
+            <div style={{ padding: '0 12px', marginTop: '8px' }} className="sm:!px-4">
               <div style={{ background: '#475569', color: '#fff', padding: '8px 16px', fontSize: '14px', fontWeight: 900, textAlign: 'center', borderRadius: '8px 8px 0 0' }}>
                 مواد غير مضافة للمجموع
               </div>

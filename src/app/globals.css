@@ -115,8 +115,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    width: 100%;
   }
 }
 
@@ -267,6 +272,30 @@ select option {
   /* Ensure disclaimer is visible in print */
   .print-disclaimer {
     page-break-inside: avoid !important;
+  }
+}
+
+/* ========== Mobile Responsive Fixes ========== */
+@media (max-width: 480px) {
+  /* Result card: smaller padding and font */
+  .print-result-card [style*="font-size: 14px"] {
+    font-size: 12px !important;
+  }
+  /* Grade badges: smaller on mobile */
+  .print-result-card span[style*="font-size: 11px"] {
+    font-size: 9px !important;
+    padding: 3px 6px !important;
+  }
+  /* Table cell padding: tighter */
+  .print-result-card div[style*="padding: 10px 14px"] {
+    padding: 8px 10px !important;
+  }
+  .print-result-card div[style*="padding: 8px 14px"] {
+    padding: 6px 10px !important;
+  }
+  /* Disclaimer */
+  .print-disclaimer {
+    padding: 12px 16px !important;
   }
 }
 

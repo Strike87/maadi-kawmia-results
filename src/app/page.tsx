@@ -42,7 +42,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-pattern">
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-6">
         {/* Header */}
         <SchoolHeader />
 

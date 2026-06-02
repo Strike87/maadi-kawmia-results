@@ -227,14 +227,14 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
-      <Card className="w-full max-w-lg mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
+      <Card className="w-full max-w-lg mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl font-bold text-center flex items-center justify-center gap-2">
+            <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <span>البحث عن النتيجة</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-4 sm:space-y-5 px-4 sm:px-6 pb-5">
           {/* Warning Alert */}
           <AnimatePresence>
             {warning && (
@@ -288,7 +288,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!termsLoaded}
-                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر الفترة الدراسية --</option>
@@ -316,7 +316,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedTerm}
-                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر المرحلة الدراسية --</option>
@@ -343,11 +343,11 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedStage}
-                className="w-full h-12 text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>
-                  {selectedStage ? '-- اختر الصف الدراسي --' : '-- اختر المرحلة الدراسية أولاً --'}
+                  {selectedStage ? '-- اختر الصف الدراسي --' : '-- اختر المرحلة أولاً --'}
                 </option>
                 {currentStageGrades.map((grade) => (
                   <option key={grade.value} value={grade.value}>{grade.label}</option>
@@ -394,7 +394,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !isLoading && canSearch) handleSearch();
               }}
-              className={`h-12 text-base text-left font-mono tracking-wider ${
+              className={`h-11 sm:h-12 text-sm sm:text-base text-left font-mono tracking-wider ${
                 idLength > 0 && !isIdComplete
                   ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/20'
                   : isIdComplete

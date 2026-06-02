@@ -12,15 +12,15 @@ export function SchoolHeader() {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="w-full max-w-lg mx-auto"
     >
-      <div className="flex items-center gap-4 bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-lg">
+      <div className="flex items-center gap-3 sm:gap-4 bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-3 sm:p-4 shadow-lg">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <div className="h-20 w-20 rounded-xl overflow-hidden shadow-lg ring-2 ring-primary/20">
+          <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-xl overflow-hidden shadow-lg ring-2 ring-primary/20">
             <Image
               src="https://lh3.googleusercontent.com/d/1yZefhaGKwzF6d2Aglbju4i1QrFG1y3Ij"
               alt="شعار مدرسة حدائق المعادي القومية"
-              width={80}
-              height={80}
+              width={56}
+              height={56}
               className="object-cover w-full h-full"
               unoptimized
             />
@@ -28,14 +28,14 @@ export function SchoolHeader() {
         </div>
 
         {/* Text */}
-        <div className="flex-1 min-w-0 text-right">
-          <h1 className="text-xl font-black leading-tight text-foreground">
+        <div className="flex-1 min-w-0 text-right overflow-hidden">
+          <h1 className="text-base sm:text-xl font-black leading-tight text-foreground">
             نتائج الامتحانات
           </h1>
-          <p className="text-sm font-bold text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm font-bold text-muted-foreground mt-0.5 sm:mt-1">
             مدرسة حدائق المعادي القومية
           </p>
-          <p className="text-xs font-semibold text-primary mt-0.5">
+          <p className="text-[10px] sm:text-xs font-semibold text-primary mt-0.5 truncate">
             Hadayek El-Maadi El-Kawmia School
           </p>
         </div>
