@@ -6,6 +6,7 @@ import { SchoolHeader } from '@/components/school-header';
 import { SearchForm } from '@/components/search-form';
 import { ResultDisplay } from '@/components/result-display';
 import { LoadingAnimation } from '@/components/loading-animation';
+import { CommonErrors } from '@/components/common-errors';
 import type { StudentResult } from '@/lib/constants';
 
 export default function HomePage() {
@@ -72,6 +73,9 @@ export default function HomePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Common Errors - only show on search screen */}
+        {!isLoading && showSearch && <CommonErrors />}
       </main>
 
       {/* Footer */}
