@@ -85,7 +85,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   SETTINGS_INCOMPLETE: 'إعدادات الشيت غير مكتملة. يرجى التواصل مع الإدارة.',
   DATA_READ_ERROR: 'حدث خطأ أثناء قراءة البيانات. يرجى المحاولة لاحقاً.',
   NO_RESULT: 'الرقم القومى الذى أدخلته غير موجود بقاعدة البيانات',
-  FEES_UNPAID: 'المصاريف غير مسددة. يرجى التوجه إلى إدارة المدرسة.',
+  FEES_UNPAID: 'تم حجب النتيجة برجاء مراجعة الحسابات',
   UNKNOWN_ERROR: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
 };
 
@@ -93,8 +93,23 @@ export const ERROR_MESSAGES: Record<string, string> = {
  * Map a raw error string from Google Apps Script
  * to a standardized error key used by ERROR_MESSAGES.
  *
- * GAS may return Arabic strings, English keys, or HTTP status codes.
- * This function normalises them so the UI always shows the right message.
+ * ORDER MATTERS: more specific patterns must come BEFORE general ones.
+ * e.g. "لم يتم العثور على نتيجة" (student) before "لم يتم العثور" (sheet)
+ *      "إعدادات الشيت غير مكتملة" before "لم يتم العثور على عمود"
+ *
+ * GAS error messages (from code.gs):
+ *   - 'فترة دراسية غير صالحة.'
+ *   - 'صف دراسي غير صالح.'
+ *   - 'الرقم القومي يجب أن يكون 14 رقمًا.'
+ *   - 'تم إرسال طلبات كثيرة في وقت قصير. يرجى الانتظار ...'
+ *   - 'لم يتم العثور على بيانات هذه الفترة.'
+ *   - 'النتائج غير متاحة حالياً.'
+ *   - 'لم يتم العثور على بيانات هذا الصف.'
+ *   - 'لا توجد بيانات في هذا الصف.'
+ *   - 'إعدادات الشيت غير مكتملة. لم يتم العثور على عمود الرقم القومي.'
+ *   - 'لم يتم العثور على نتيجة لهذا الرقم القومي في هذا الصف.'
+ *   - 'تم حجب النتيجة برجاء مراجعة الحسابات'
+ *   - 'حدث خطأ أثناء قراءة البيانات. يرجى المحاولة مرة أخرى.'
  */
 export function mapGasError(rawError: string): string {
   if (!rawError) return 'UNKNOWN_ERROR';
@@ -103,20 +118,41 @@ export function mapGasError(rawError: string): string {
   // ── Exact-match keys (if GAS returns an error key) ──
   if (ERROR_MESSAGES[e]) return e;
 
-  // ── Pattern-match Arabic strings from GAS ──
-  if (/غير صالحة.*فترة|فترة.*غير صالحة|invalid.*term/i.test(e)) return 'INVALID_TERM';
-  if (/صف دراسي غير صالح|غير صالحة.*صف|invalid.*grade|invalid.*class/i.test(e)) return 'INVALID_GRADE';
-  if (/الرقم القومي.*14|14.*رقم|national.*id.*14/i.test(e)) return 'INVALID_ID';
-  if (/غير متاحة|not published|published.*false|_isPublished|B1.*false/i.test(e)) return 'RESULTS_UNAVAILABLE';
-  // ── IMPORTANT: NO_RESULT must be checked BEFORE SHEET_NOT_FOUND ──
-  // Both contain "لم يتم العثور" but "لم يتم العثور على نتيجة" means student not found,
-  // while "لم يتم العثور على بيانات هذا الصف" means sheet not found.
-  if (/لم يتم العثور على نتيجة|الرقم القومي.*غير موجود|no.*result|no.*data.*found|not found.*student|student.*not/i.test(e)) return 'NO_RESULT';
-  if (/لم يتم العثور|not found|sheet.*not.*found|no.*sheet/i.test(e)) return 'SHEET_NOT_FOUND';
+  // ── Pattern-match — ORDER: most specific first ──
+
+  // Student not found: "لم يتم العثور على نتيجة لهذا الرقم القومي في هذا الصف."
+  if (/لم يتم العثور على نتيجة|الرقم القومي.*غير موجود|not found.*student|student.*not/i.test(e)) return 'NO_RESULT';
+
+  // Settings incomplete: "إعدادات الشيت غير مكتملة. لم يتم العثور على عمود الرقم القومي."
+  // Must come BEFORE the general "لم يتم العثور" pattern
+  if (/إعدادات.*غير مكتملة|لم يتم العثور على عمود|settings.*incomplete|missing.*column/i.test(e)) return 'SETTINGS_INCOMPLETE';
+
+  // Fees unpaid: "تم حجب النتيجة برجاء مراجعة الحسابات"
+  if (/حجب النتيجة|مصاريف|fees|المصاريف|برجاء مراجعة الحسابات/i.test(e)) return 'FEES_UNPAID';
+
+  // No data in sheet: "لا توجد بيانات في هذا الصف."
+  if (/لا توجد بيانات/i.test(e)) return 'SHEET_NOT_FOUND';
+
+  // Sheet not found: "لم يتم العثور على بيانات هذا الصف." or "لم يتم العثور على بيانات هذه الفترة."
+  if (/لم يتم العثور على بيانات|not found|sheet.*not.*found|no.*sheet/i.test(e)) return 'SHEET_NOT_FOUND';
+
+  // Results unpublished: "النتائج غير متاحة حالياً."
+  if (/غير متاحة|not published|_isPublished/i.test(e)) return 'RESULTS_UNAVAILABLE';
+
+  // Rate limited: "تم إرسال طلبات كثيرة في وقت قصير."
   if (/طلبات كثيرة|rate.?limit|too many|throttl/i.test(e)) return 'RATE_LIMITED';
-  if (/إعدادات.*غير مكتملة|settings.*incomplete|missing.*column|لم يتم العثور على عمود/i.test(e)) return 'SETTINGS_INCOMPLETE';
+
+  // Invalid term: "فترة دراسية غير صالحة."
+  if (/فترة.*غير صالحة|غير صالحة.*فترة|invalid.*term/i.test(e)) return 'INVALID_TERM';
+
+  // Invalid grade: "صف دراسي غير صالح."
+  if (/صف دراسي غير صالح|غير صالحة.*صف|invalid.*grade|invalid.*class/i.test(e)) return 'INVALID_GRADE';
+
+  // Invalid ID: "الرقم القومي يجب أن يكون 14 رقمًا."
+  if (/الرقم القومي.*14|14.*رقم|national.*id.*14/i.test(e)) return 'INVALID_ID';
+
+  // Data read error: "حدث خطأ أثناء قراءة البيانات."
   if (/خطأ أثناء قراءة|error.*reading|read.*error|corrupted/i.test(e)) return 'DATA_READ_ERROR';
-  if (/مصاريف|fees|المصاريف/i.test(e)) return 'FEES_UNPAID';
 
   // ── Fallback: return the raw string as-is so something is always shown ──
   return e;
