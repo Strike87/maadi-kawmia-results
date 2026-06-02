@@ -97,7 +97,7 @@ export function middleware(request: NextRequest) {
     const ip = getClientIP(request);
     if (isRateLimited(ip)) {
       return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة بعد دقيقة.' },
+        { error: 'تم إرسال طلبات كثيرة في وقت قصير' },
         { status: 429 }
       );
     }
