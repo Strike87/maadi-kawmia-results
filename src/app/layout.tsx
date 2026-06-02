@@ -11,6 +11,8 @@ const cairo = Cairo({
   display: 'swap',
 });
 
+const SITE_URL = 'https://maadi-kawmia-results.vercel.app';
+
 export const metadata: Metadata = {
   title: 'نتيجة الامتحانات - مدرسة حدائق المعادي القومية',
   description: 'استعلم عن نتيجة الامتحانات بالرقم القومي - مدرسة حدائق المعادي القومية',
@@ -20,8 +22,24 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'نتيجة الامتحانات - مدرسة حدائق المعادي القومية',
-    description: 'استعلم عن نتيجة الامتحانات بالرقم القومي.',
+    description: 'استعلم عن نتيجة الامتحانات بالرقم القومي - مدرسة حدائق المعادي القومية',
     type: 'website',
+    url: SITE_URL,
+    siteName: 'مدرسة حدائق المعادي القومية',
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1344,
+        height: 768,
+        alt: 'مدرسة حدائق المعادي القومية - نتيجة الامتحانات',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'نتيجة الامتحانات - مدرسة حدائق المعادي القومية',
+    description: 'استعلم عن نتيجة الامتحانات بالرقم القومي',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 
