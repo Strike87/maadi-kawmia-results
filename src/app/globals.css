@@ -181,23 +181,22 @@ select option {
 
 /* ========== Print Styles - A4 Portrait, Single Page ========== */
 @media print {
-  /* Remove browser headers/footers (URL, date, page number) */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 5mm;
   }
 
   /* Reset root */
   html, body {
-    width: 210mm !important;
-    height: 297mm !important;
+    width: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   /* Hide all non-result elements */
@@ -245,19 +244,20 @@ select option {
     padding: 0 !important;
   }
 
-  /* The main result card — edge-to-edge with internal margins */
+  /* The main result card */
   .print-result-card {
     max-width: 100% !important;
     width: 100% !important;
-    height: 297mm !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    padding: 6mm 8mm !important;
-    font-size: 11px !important;
-    line-height: 1.3 !important;
-    overflow: hidden !important;
+    padding: 3mm 4mm !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Force all colors to print */
@@ -274,46 +274,107 @@ select option {
     display: inline-block !important;
   }
 
-  /* Fix column proportions for print */
-  .print-result-card [class*="flex-\\[5\\]"] {
-    flex: 5 !important;
+  /* Header section — very compact */
+  .print-header {
+    padding: 1mm 2mm !important;
   }
-  .print-result-card [class*="flex-\\[3\\]"] {
-    flex: 3 !important;
+  .print-header h2 {
+    font-size: 11px !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
   }
-  .print-result-card [class*="flex-\\[4\\]"] {
-    flex: 4 !important;
-  }
-
-  /* Compact spacing for print */
-  .print-result-card [class*="mt-"] {
-    margin-top: 1.5mm !important;
+  .print-header p {
+    margin: 0 !important;
+    line-height: 1.2 !important;
   }
 
-  .print-result-card [class*="py-"] {
+  /* Student data section — compact */
+  .print-student-data {
+    margin-top: 1mm !important;
+    padding: 0 1mm !important;
+  }
+
+  /* Section bars (بيانات الطالب / درجات الطالب) */
+  .print-section-bar {
+    padding: 1mm 2mm !important;
+    font-size: 9px !important;
+  }
+
+  /* Sub-header bars (مواد مضافة / غير مضافة) */
+  .print-sub-bar {
+    padding: 0.8mm 2mm !important;
+    font-size: 8px !important;
+  }
+
+  /* Table header row */
+  .print-table-head {
+    font-size: 8px !important;
+  }
+  .print-table-head > div {
+    padding: 0.8mm 1.5mm !important;
+  }
+
+  /* Subject rows — compact */
+  .print-subject-row {
+    font-size: 8.5px !important;
+  }
+  .print-subject-row > div {
+    padding-top: 0.8mm !important;
+    padding-bottom: 0.8mm !important;
+    padding-left: 1.5mm !important;
+    padding-right: 1.5mm !important;
+  }
+
+  /* Total row */
+  .print-total-row {
+    font-size: 9px !important;
+  }
+  .print-total-row > div {
     padding-top: 1mm !important;
     padding-bottom: 1mm !important;
+    padding-left: 1.5mm !important;
+    padding-right: 1.5mm !important;
   }
 
-  .print-result-card [class*="px-"] {
-    padding-left: 3mm !important;
-    padding-right: 3mm !important;
+  /* Student info rows */
+  .print-info-row {
+    font-size: 9px !important;
+  }
+  .print-info-row > div {
+    padding-top: 0.8mm !important;
+    padding-bottom: 0.8mm !important;
   }
 
-  /* Ensure disclaimer is visible in print */
+  /* Grades section */
+  .print-grades {
+    margin-top: 1mm !important;
+    padding: 0 1mm !important;
+  }
+
+  /* Excluded section */
+  .print-excluded {
+    margin-top: 1mm !important;
+    padding: 0 1mm !important;
+  }
+
+  /* Badge pills — smaller in print */
+  .print-badge {
+    padding: 0.5mm 2mm !important;
+    font-size: 7.5px !important;
+  }
+
+  /* Disclaimer — compact */
   .print-disclaimer {
-    padding: 3mm 3mm !important;
+    padding: 1mm 2mm !important;
+  }
+  .print-disclaimer p {
+    font-size: 7px !important;
+    margin: 0 !important;
   }
 
-  /* Hide percentage bar in print (data already in total row) */
+  /* Hide percentage bar in print */
   .print-percentage-bar {
     display: none !important;
-  }
-
-  /* Force single page — no page breaks */
-  .print-result-card {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
   }
 }
 
