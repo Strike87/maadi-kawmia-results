@@ -6,16 +6,9 @@ import {
   MessageCircle,
   Printer,
   Search,
-  User,
-  BookOpen,
-  TrendingUp,
-  Award,
   Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   type StudentResult,
   type ComputedTotals,
@@ -23,7 +16,6 @@ import {
   computeTotals,
   usesAdvancedScale,
   gradeLabel,
-  gradeColor,
   thresholdClass,
   isAbsenceCode,
   buildShareLines,
@@ -38,79 +30,19 @@ interface ResultDisplayProps {
   onNewSearch: () => void;
 }
 
-const thresholdColors: Record<string, { bg: string; text: string; bar: string; badge: string }> = {
-  red: {
-    bg: 'bg-red-50 dark:bg-red-950/20',
-    text: 'text-red-600 dark:text-red-400',
-    bar: 'bg-red-500',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  },
-  yellow: {
-    bg: 'bg-amber-50 dark:bg-amber-950/20',
-    text: 'text-amber-600 dark:text-amber-400',
-    bar: 'bg-amber-500',
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  },
-  green: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/20',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    bar: 'bg-emerald-500',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  },
-  blue: {
-    bg: 'bg-blue-50 dark:bg-blue-950/20',
-    text: 'text-blue-600 dark:text-blue-400',
-    bar: 'bg-blue-500',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  },
-};
+function scoreColor(pct: number): string {
+  if (pct >= 85) return '#2563eb';  // blue - excellent
+  if (pct >= 75) return '#16a34a';  // green - very good
+  if (pct >= 65) return '#16a34a';  // green - good
+  if (pct >= 50) return '#d97706';  // amber - pass
+  return '#dc2626';                  // red - fail
+}
 
-function ScoreCell({ item, adv }: { item: SubjectItem; adv: boolean }) {
-  if (item.isNum) {
-    const pct = Math.round((item.score / item.maxScore) * 100);
-    const tc = thresholdClass(pct, adv);
-    const colors = thresholdColors[tc];
-    const label = gradeLabel(pct, adv);
-
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-bold" dir="ltr">
-            {item.rawScore} / {item.maxScore}
-          </span>
-          <Badge
-            className={`text-xs font-bold px-2 py-0.5 border-0 ${colors.badge}`}
-          >
-            {label}
-          </Badge>
-        </div>
-        {!adv && (
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-            <motion.div
-              className={`h-full rounded-full ${colors.bar}`}
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (isAbsenceCode(item.rawScore)) {
-    const raw = String(item.rawScore).trim();
-    const label = raw === '' || raw === '-' ? '—' : raw;
-    return (
-      <Badge variant="outline" className="text-xs font-bold text-muted-foreground">
-        {label}
-      </Badge>
-    );
-  }
-
-  return (
-    <span className="text-sm font-bold text-red-500">{item.rawScore}</span>
-  );
+function scoreBgColor(pct: number): string {
+  if (pct >= 85) return 'rgba(37,99,235,0.08)';
+  if (pct >= 65) return 'rgba(22,163,74,0.08)';
+  if (pct >= 50) return 'rgba(217,119,6,0.08)';
+  return 'rgba(220,38,38,0.08)';
 }
 
 export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
@@ -118,11 +50,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const adv = usesAdvancedScale(data);
   const totals: ComputedTotals = computeTotals(data);
   const totalLabel = gradeLabel(totals.totalPct, adv);
-  const totalColor = gradeColor(totals.totalPct, adv);
-  const totalTc = thresholdClass(totals.totalPct, adv);
-  const totalColors = thresholdColors[totalTc];
-  // Strip @ from cl for grade label lookup
   const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
+  const isPassed = totals.totalPct >= 50;
+  const resultText = isPassed ? 'ناجح' : 'دون المستوى';
+  const resultColor = isPassed ? '#16a34a' : '#dc2626';
 
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
@@ -149,189 +80,270 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     window.print();
   };
 
+  // Build all rows for the table
+  type TableRow = { label: string; value: string; isSubject?: boolean; pct?: number; isTotal?: boolean; isResult?: boolean; resultColor?: string };
+  const rows: TableRow[] = [];
+
+  // Student info rows
+  rows.push({ label: 'اسم الطالب', value: data.stn });
+  rows.push({ label: 'الصف الدراسي', value: gradeText });
+  rows.push({ label: 'الرقم القومي', value: data.id });
+  rows.push({ label: 'النتيجة', value: resultText, isResult: true, resultColor });
+
+  // Included subjects
+  totals.included.forEach((item) => {
+    if (item.isNum) {
+      const pct = Math.round((item.score / item.maxScore) * 100);
+      rows.push({
+        label: item.clean,
+        value: `${item.rawScore} / ${item.maxScore}`,
+        isSubject: true,
+        pct,
+      });
+    } else if (isAbsenceCode(item.rawScore)) {
+      const raw = String(item.rawScore).trim();
+      rows.push({
+        label: item.clean,
+        value: raw === '' || raw === '-' ? '—' : raw,
+        isSubject: true,
+      });
+    } else {
+      rows.push({
+        label: item.clean,
+        value: item.rawScore,
+        isSubject: true,
+      });
+    }
+  });
+
+  // Total row
+  rows.push({
+    label: 'المجموع الكلي',
+    value: `${totals.totalDisplay} / ${totals.totalMax}  (${totals.totalPct}%  -  ${totalLabel})`,
+    isTotal: true,
+    pct: totals.totalPct,
+  });
+
+  // Excluded subjects (shown separately if any)
+  const excludedRows: TableRow[] = totals.excluded.map((item) => {
+    if (item.isNum) {
+      const pct = Math.round((item.score / item.maxScore) * 100);
+      return {
+        label: item.clean,
+        value: `${item.rawScore} / ${item.maxScore}`,
+        isSubject: true,
+        pct,
+      };
+    } else if (isAbsenceCode(item.rawScore)) {
+      const raw = String(item.rawScore).trim();
+      return {
+        label: item.clean,
+        value: raw === '' || raw === '-' ? '—' : raw,
+        isSubject: true,
+      };
+    } else {
+      return {
+        label: item.clean,
+        value: item.rawScore,
+        isSubject: true,
+      };
+    }
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="w-full max-w-2xl mx-auto space-y-5"
+      className="w-full max-w-lg mx-auto space-y-5"
     >
-      {/* Student Info Card */}
-      <Card className="border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
-        {/* Top Banner */}
+      {/* Result Card */}
+      <div
+        className="rounded-2xl overflow-hidden shadow-xl"
+        style={{ border: '2px solid #003566' }}
+      >
+        {/* Header Banner */}
         <div
-          className="px-6 py-4 text-white"
-          style={{ background: `linear-gradient(135deg, ${totalColor}, ${totalColor}dd)` }}
+          className="px-5 py-4 text-white text-center"
+          style={{ background: 'linear-gradient(135deg, #001d3d, #003566)' }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                <User className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black leading-tight">{data.stn}</h2>
-                <p className="text-sm font-semibold opacity-90">{gradeText}</p>
-              </div>
-            </div>
-            <div className="text-left">
-              <div className="text-2xl font-black" dir="ltr">
-                {totals.totalPct}%
-              </div>
-              <Badge className="bg-white/20 text-white border-white/30 font-bold text-sm">
-                {totalLabel}
-              </Badge>
-            </div>
-          </div>
+          <h2 className="text-lg font-black">نتيجة الامتحانات</h2>
+          <p className="text-sm font-bold opacity-90 mt-1">مدرسة حدائق المعادي القومية</p>
         </div>
 
-        <CardContent className="p-0">
-          {/* Info Rows */}
-          <div className="grid grid-cols-2 gap-0">
-            <div className="px-6 py-3 border-l border-border/50">
-              <p className="text-xs text-muted-foreground font-semibold mb-0.5">الصف الدراسي</p>
-              <p className="text-sm font-bold">{gradeText}</p>
-            </div>
-            <div className="px-6 py-3">
-              <p className="text-xs text-muted-foreground font-semibold mb-0.5">الرقم القومي</p>
-              <p className="text-sm font-bold font-mono" dir="ltr">{data.id}</p>
-            </div>
-          </div>
+        {/* Vertical Table */}
+        <div className="bg-white dark:bg-card">
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <tbody>
+              {rows.map((row, i) => {
+                const isLast = i === rows.length - 1;
+                const borderBottom = isLast ? 'none' : '1px solid #e5e7eb';
 
-          <Separator />
-
-          {/* Total Summary Bar */}
-          <div className={`px-6 py-4 ${totalColors.bg}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="font-black text-sm">المجموع الكلي</span>
-              </div>
-              <span className="font-black text-sm" dir="ltr">
-                {totals.totalDisplay} / {totals.totalMax}
-              </span>
-            </div>
-            <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
-              <motion.div
-                className={`h-full rounded-full ${totalColors.bar}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${totals.totalPct}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Included Subjects */}
-          <div className="px-6 py-4">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <h3 className="font-black text-sm">مواد مضافة للمجموع</h3>
-            </div>
-            <div className="space-y-3">
-              {totals.included.map((item, i) => (
-                <motion.div
-                  key={`inc-${i}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className={`rounded-xl p-3 ${
-                    item.isNum
-                      ? thresholdColors[thresholdClass(Math.round((item.score / item.maxScore) * 100), adv)].bg
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="font-bold text-sm leading-relaxed min-w-0 flex-1">
-                      {item.clean}
-                    </span>
-                    <div className="flex-shrink-0 w-40">
-                      <ScoreCell item={item} adv={adv} />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Excluded Subjects */}
-          {totals.excluded.length > 0 && (
-            <>
-              <Separator />
-              <div className="px-6 py-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Award className="h-4 w-4 text-muted-foreground" />
-                  <h3 className="font-black text-sm text-muted-foreground">
-                    مواد غير مضافة للمجموع
-                  </h3>
-                </div>
-                <div className="space-y-2">
-                  {totals.excluded.map((item, i) => (
-                    <motion.div
-                      key={`exc-${i}`}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.05 + 0.3 }}
-                      className="rounded-xl p-3 bg-muted/50"
+                return (
+                  <motion.tr
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.03 }}
+                    style={{ borderBottom }}
+                  >
+                    {/* Label (th) */}
+                    <td
+                      className="px-4 py-2.5 text-sm font-bold text-right"
+                      style={{
+                        width: '45%',
+                        background: row.isTotal
+                          ? '#f0f4ff'
+                          : row.isResult
+                            ? 'rgba(22,163,74,0.06)'
+                            : '#f8f9fa',
+                        borderLeft: row.isSubject && row.pct !== undefined
+                          ? `4px solid ${scoreColor(row.pct)}`
+                          : row.isTotal
+                            ? '4px solid #003566'
+                            : row.isResult
+                              ? `4px solid ${row.resultColor}`
+                              : '4px solid #003566',
+                        color: row.isTotal ? '#001d3d' : '#001d3d',
+                      }}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-bold text-sm text-muted-foreground">
-                          {item.clean}
-                        </span>
-                        <div className="flex-shrink-0 w-40">
-                          <ScoreCell item={item} adv={adv} />
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                      {row.label}
+                    </td>
+                    {/* Value (td) */}
+                    <td
+                      className="px-4 py-2.5 text-sm font-bold text-center"
+                      style={{
+                        color: row.isResult
+                          ? row.resultColor
+                          : row.isTotal
+                            ? '#001d3d'
+                            : row.isSubject && row.pct !== undefined
+                              ? scoreColor(row.pct)
+                              : '#1f2937',
+                        background: row.isTotal
+                          ? '#f0f4ff'
+                          : row.isSubject && row.pct !== undefined
+                            ? scoreBgColor(row.pct)
+                            : row.isResult
+                              ? 'rgba(22,163,74,0.06)'
+                              : 'transparent',
+                        fontWeight: row.isTotal || row.isResult ? 900 : 700,
+                        fontSize: row.isTotal ? '15px' : row.isResult ? '15px' : '14px',
+                      }}
+                    >
+                      {row.value}
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Excluded Subjects (if any) */}
+        {excludedRows.length > 0 && (
+          <>
+            <div className="px-4 py-2 text-center" style={{ background: '#f8f9fa', borderTop: '1px solid #e5e7eb' }}>
+              <span className="text-xs font-bold text-gray-500">مواد غير مضافة للمجموع</span>
+            </div>
+            <div className="bg-white dark:bg-card">
+              <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                <tbody>
+                  {excludedRows.map((row, i) => {
+                    const isLast = i === excludedRows.length - 1;
+                    const borderBottom = isLast ? 'none' : '1px solid #e5e7eb';
+
+                    return (
+                      <motion.tr
+                        key={`exc-${i}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: (rows.length + i) * 0.03 }}
+                        style={{ borderBottom }}
+                      >
+                        <td
+                          className="px-4 py-2.5 text-sm font-bold text-right text-gray-500"
+                          style={{
+                            width: '45%',
+                            background: '#fafafa',
+                            borderLeft: row.pct !== undefined
+                              ? `4px solid ${scoreColor(row.pct)}`
+                              : '4px solid #9ca3af',
+                          }}
+                        >
+                          {row.label}
+                        </td>
+                        <td
+                          className="px-4 py-2.5 text-sm text-center text-gray-600"
+                          style={{
+                            color: row.pct !== undefined ? scoreColor(row.pct) : '#6b7280',
+                            background: row.pct !== undefined ? scoreBgColor(row.pct) : 'transparent',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {row.value}
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Total Progress Bar */}
+        <div className="px-4 py-3" style={{ background: '#f8f9fa', borderTop: '1px solid #e5e7eb' }}>
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: scoreColor(totals.totalPct) }}
+              initial={{ width: 0 }}
+              animate={{ width: `${totals.totalPct}%` }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Action Buttons */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 no-print"
       >
         <Button
           onClick={handleCopy}
           variant="outline"
-          className={`h-12 rounded-xl font-bold gap-2 transition-all duration-300 ${
+          className={`h-11 rounded-xl font-bold gap-2 transition-all duration-300 text-sm ${
             copied
               ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
               : ''
           }`}
         >
-          {copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? 'تم النسخ' : 'نسخ'}
         </Button>
         <Button
           onClick={handleWhatsApp}
-          className="h-12 rounded-xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white"
+          className="h-11 rounded-xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white text-sm"
         >
           <MessageCircle className="h-4 w-4" />
           واتساب
         </Button>
         <Button
           onClick={handlePrint}
-          variant="outline"
-          className="h-12 rounded-xl font-bold gap-2"
+          className="h-11 rounded-xl font-bold gap-2 text-white text-sm"
+          style={{ background: '#28a745' }}
         >
           <Printer className="h-4 w-4" />
           طباعة
         </Button>
         <Button
           onClick={onNewSearch}
-          className="h-12 rounded-xl font-bold gap-2 bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+          className="h-11 rounded-xl font-bold gap-2 text-white text-sm"
+          style={{ background: 'linear-gradient(to left, #001d3d, #003566)' }}
         >
           <Search className="h-4 w-4" />
           بحث جديد
@@ -339,8 +351,8 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
       </motion.div>
 
       {/* Disclaimer */}
-      <p className="text-center text-sm font-bold text-red-500 dark:text-red-400">
-        هذه نتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
+      <p className="text-center text-xs font-bold text-red-500 dark:text-red-400 no-print">
+        * هذه النتيجة استرشادية ولا يعتد بها كمستند رسمي *
       </p>
     </motion.div>
   );
