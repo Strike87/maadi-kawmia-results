@@ -16,6 +16,7 @@ import {
   computeTotals,
   usesAdvancedScale,
   gradeLabel,
+  gradeColor,
   isAbsenceCode,
   buildShareLines,
   GRADE_MAP,
@@ -36,7 +37,6 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const totalLabel = gradeLabel(totals.totalPct, adv);
   const gradeText = data.clLabel || GRADE_MAP[stripAt(data.cl)] || stripAt(data.cl);
   const isPassed = totals.totalPct >= 50;
-  const resultText = isPassed ? 'ناجح' : 'دون المستوى';
 
   const handleCopy = async () => {
     const text = buildShareLines(data, false).join('\n');
@@ -63,54 +63,46 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     window.print();
   };
 
-  // Build table rows - exactly like the grading app: <tr><th>label</th><td>value</td></tr>
-  type TableRow = { label: string; value: string };
-  const rows: TableRow[] = [];
+  // Helper: get grade badge color based on percentage
+  const getBadgeStyle = (pct: number, isAdv: boolean): { bg: string; text: string } => {
+    if (pct >= 85) return { bg: '#2563eb', text: 'يفوق التوقعات' };
+    if (isAdv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
+    if (!isAdv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات' };
+    if (pct >= 50) return { bg: '#d97706', text: 'يلبي التوقعات أحياناً' };
+    return { bg: '#dc2626', text: 'أقل من المتوقع' };
+  };
 
-  // Student info rows
-  rows.push({ label: 'اسم الطالب', value: data.stn });
-  rows.push({ label: 'الصف الدراسي', value: gradeText });
-  rows.push({ label: 'الرقم القومي', value: data.id });
-  rows.push({ label: 'النتيجة', value: resultText });
+  const getBadgeStyleAdv = (pct: number, isAdv: boolean): { bg: string; text: string } => {
+    if (pct >= 85) return { bg: '#2563eb', text: 'ممتاز' };
+    if (isAdv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً' };
+    if (!isAdv && pct >= 65) return { bg: '#16a34a', text: 'جيد' };
+    if (pct >= 50) return { bg: '#d97706', text: 'مقبول' };
+    return { bg: '#dc2626', text: 'دون المستوى' };
+  };
 
-  // Included subjects
-  totals.included.forEach((item) => {
+  // For primary grades use the simpler labels
+  const getGradeBadge = (pct: number) => {
+    if (adv) return getBadgeStyleAdv(pct, adv);
+    return getBadgeStyle(pct, adv);
+  };
+
+  // Calculate subject percentage
+  const getSubjectPct = (item: SubjectItem): number => {
+    if (!item.isNum || item.maxScore === 0) return 0;
+    return Math.round((item.score / item.maxScore) * 100);
+  };
+
+  // Format score display
+  const formatScore = (item: SubjectItem): string => {
     if (item.isNum) {
-      rows.push({
-        label: item.clean,
-        value: String(item.rawScore),
-      });
-    } else if (isAbsenceCode(item.rawScore)) {
-      const raw = String(item.rawScore).trim();
-      rows.push({
-        label: item.clean,
-        value: raw === '' || raw === '-' ? '—' : raw,
-      });
-    } else {
-      rows.push({
-        label: item.clean,
-        value: item.rawScore,
-      });
+      return `${item.score} / ${item.maxScore}`;
     }
-  });
-
-  // Total row
-  rows.push({
-    label: 'المجموع الكلي',
-    value: `${totals.totalDisplay} / ${totals.totalMax}  (${totals.totalPct}%  -  ${totalLabel})`,
-  });
-
-  // Excluded subjects
-  const excludedRows: TableRow[] = totals.excluded.map((item) => {
-    if (item.isNum) {
-      return { label: item.clean, value: String(item.rawScore) };
-    } else if (isAbsenceCode(item.rawScore)) {
+    if (isAbsenceCode(item.rawScore)) {
       const raw = String(item.rawScore).trim();
-      return { label: item.clean, value: raw === '' || raw === '-' ? '—' : raw };
-    } else {
-      return { label: item.clean, value: item.rawScore };
+      return raw === '' || raw === '-' ? '—' : raw;
     }
-  });
+    return item.rawScore;
+  };
 
   return (
     <motion.div
@@ -119,122 +111,512 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className="w-full max-w-lg mx-auto space-y-4"
     >
-      {/* Result Table - Matching Grading App Exactly */}
       <div className="result-container">
-        <table
-          className="v-table"
+        {/* ========== Result Card ========== */}
+        <div
           style={{
-            width: '100%',
-            background: 'white',
-            borderCollapse: 'collapse',
-            borderRadius: '15px',
+            background: '#fff',
+            borderRadius: '12px',
             overflow: 'hidden',
-            boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            border: '1px solid #e2e8f0',
           }}
         >
-          <tbody>
-            {rows.map((row, i) => (
-              <motion.tr
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.2, delay: i * 0.03 }}
-              >
-                <th
-                  style={{
-                    background: '#f8f9fa',
-                    color: '#001d3d',
-                    padding: '15px',
-                    textAlign: 'right',
-                    width: '45%',
-                    borderLeft: '5px solid #003566',
-                    fontWeight: 'bold',
-                    fontSize: '14px',
-                  }}
-                >
-                  {row.label}
-                </th>
-                <td
-                  style={{
-                    padding: '15px',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    borderBottom: '1px solid #eee',
-                    color: '#001d3d',
-                    fontSize: '14px',
-                  }}
-                >
-                  {row.value}
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Excluded Subjects Table */}
-        {excludedRows.length > 0 && (
-          <div style={{ marginTop: '20px' }}>
-            <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>
-              مواد غير مضافة للمجموع
-            </p>
-            <table
+          {/* ===== Header Section ===== */}
+          <div style={{ padding: '20px 24px 12px', textAlign: 'right' }}>
+            <h2
               style={{
-                width: '100%',
-                background: 'white',
-                borderCollapse: 'collapse',
-                borderRadius: '15px',
-                overflow: 'hidden',
-                boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
+                fontSize: '18px',
+                fontWeight: 900,
+                color: '#101827',
+                margin: 0,
+                lineHeight: 1.4,
               }}
             >
-              <tbody>
-                {excludedRows.map((row, i) => (
-                  <tr key={`exc-${i}`}>
-                    <th
-                      style={{
-                        background: '#f8f9fa',
-                        color: '#666',
-                        padding: '12px',
-                        textAlign: 'right',
-                        width: '45%',
-                        borderLeft: '5px solid #999',
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                      }}
-                    >
-                      {row.label}
-                    </th>
-                    <td
-                      style={{
-                        padding: '12px',
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        borderBottom: '1px solid #eee',
-                        color: '#666',
-                        fontSize: '13px',
-                      }}
-                    >
-                      {row.value}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              نتائج الامتحانات
+            </h2>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: 800,
+                color: '#64748b',
+                margin: '4px 0 0',
+                direction: 'ltr',
+                textAlign: 'right',
+              }}
+            >
+              Hadayek El-maadi El-kawmia school
+            </p>
+            <p
+              style={{
+                fontSize: '16px',
+                fontWeight: 900,
+                color: '#000',
+                margin: '6px 0 0',
+              }}
+            >
+              {data.termName || 'أخر العام 2026'}
+            </p>
           </div>
-        )}
 
-        {/* Print Button - Exactly like grading app */}
+          {/* ===== Student Data Section ===== */}
+          <div style={{ padding: '0 16px', marginTop: '8px' }}>
+            {/* "بيانات الطالب" Header Bar */}
+            <div
+              style={{
+                background: '#172033',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '8px 8px 0 0',
+                fontSize: '14px',
+                fontWeight: 900,
+                textAlign: 'center',
+              }}
+            >
+              بيانات الطالب
+            </div>
+
+            {/* Student Info Rows */}
+            <div
+              style={{
+                border: '1px solid #334155',
+                borderTop: 'none',
+                borderRadius: '0 0 8px 8px',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Row: الصف الدراسي */}
+              <div
+                style={{
+                  display: 'flex',
+                  borderBottom: '1px solid #999',
+                  fontSize: '14px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '40%',
+                    padding: '10px 14px',
+                    color: '#334155',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                    borderLeft: '1px solid #999',
+                  }}
+                >
+                  الصف الدراسي
+                </div>
+                <div
+                  style={{
+                    width: '60%',
+                    padding: '10px 14px',
+                    color: '#000',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                  }}
+                >
+                  {gradeText}
+                </div>
+              </div>
+
+              {/* Row: الرقم القومي */}
+              <div
+                style={{
+                  display: 'flex',
+                  borderBottom: '1px solid #999',
+                  fontSize: '14px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '40%',
+                    padding: '10px 14px',
+                    color: '#334155',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                    borderLeft: '1px solid #999',
+                  }}
+                >
+                  الرقم القومي
+                </div>
+                <div
+                  style={{
+                    width: '60%',
+                    padding: '10px 14px',
+                    color: '#000',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                    direction: 'ltr',
+                    unicodeBidi: 'embed',
+                  }}
+                >
+                  {data.id}
+                </div>
+              </div>
+
+              {/* Row: اسم الطالب */}
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '14px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '40%',
+                    padding: '10px 14px',
+                    color: '#334155',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                    borderLeft: '1px solid #999',
+                  }}
+                >
+                  اسم الطالب
+                </div>
+                <div
+                  style={{
+                    width: '60%',
+                    padding: '10px 14px',
+                    color: '#000',
+                    fontWeight: 900,
+                    textAlign: 'right',
+                  }}
+                >
+                  {data.stn}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== Grades Section ===== */}
+          <div style={{ padding: '0 16px', marginTop: '12px' }}>
+            {/* "درجات الطالب" Header Bar */}
+            <div
+              style={{
+                background: '#172033',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '8px 8px 0 0',
+                fontSize: '14px',
+                fontWeight: 900,
+                textAlign: 'center',
+              }}
+            >
+              درجات الطالب
+            </div>
+
+            {/* "مواد مضافة للمجموع" Sub-header */}
+            <div
+              style={{
+                background: '#475569',
+                color: '#fff',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 900,
+                textAlign: 'center',
+              }}
+            >
+              مواد مضافة للمجموع
+            </div>
+
+            {/* Table Header Row */}
+            <div
+              style={{
+                display: 'flex',
+                background: '#334155',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 900,
+              }}
+            >
+              <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>
+                المادة
+              </div>
+              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>
+                الدرجة
+              </div>
+              <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>
+                التقدير
+              </div>
+            </div>
+
+            {/* Subject Rows */}
+            <div
+              style={{
+                border: '1px solid #999',
+                borderTop: 'none',
+              }}
+            >
+              {totals.included.map((item, i) => {
+                const pct = getSubjectPct(item);
+                const badge = item.isNum ? getGradeBadge(pct) : null;
+                return (
+                  <motion.div
+                    key={`inc-${i}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.04 }}
+                    style={{
+                      display: 'flex',
+                      borderBottom: i < totals.included.length - 1 ? '1px solid #e5e7eb' : 'none',
+                      fontSize: '14px',
+                      background: '#fff',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '50%',
+                        padding: '10px 14px',
+                        color: '#334155',
+                        fontWeight: 900,
+                        textAlign: 'right',
+                        borderLeft: '1px solid #e5e7eb',
+                      }}
+                    >
+                      {item.clean}
+                    </div>
+                    <div
+                      style={{
+                        width: '25%',
+                        padding: '10px 14px',
+                        color: '#000',
+                        fontWeight: 900,
+                        textAlign: 'center',
+                        borderLeft: '1px solid #e5e7eb',
+                      }}
+                    >
+                      {formatScore(item)}
+                    </div>
+                    <div
+                      style={{
+                        width: '25%',
+                        padding: '6px 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {badge ? (
+                        <span
+                          style={{
+                            background: badge.bg,
+                            color: '#fff',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: 900,
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {badge.text}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#999', fontSize: '13px' }}>
+                          {item.rawScore}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Total Row */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: totals.included.length * 0.04 + 0.1 }}
+                style={{
+                  display: 'flex',
+                  background: '#2563eb',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 900,
+                }}
+              >
+                <div style={{ width: '50%', padding: '12px 14px', textAlign: 'right', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                  المجموع الكلي
+                </div>
+                <div style={{ width: '25%', padding: '12px 14px', textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                  {totals.totalDisplay} / {totals.totalMax}
+                </div>
+                <div style={{ width: '25%', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span
+                    style={{
+                      background: 'rgba(255,255,255,0.25)',
+                      color: '#fff',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: 900,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {totalLabel}
+                  </span>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* ===== Excluded Subjects Section ===== */}
+          {totals.excluded.length > 0 && (
+            <div style={{ padding: '0 16px', marginTop: '8px' }}>
+              {/* "مواد غير مضافة للمجموع" Sub-header */}
+              <div
+                style={{
+                  background: '#475569',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 900,
+                  textAlign: 'center',
+                  borderRadius: '8px 8px 0 0',
+                }}
+              >
+                مواد غير مضافة للمجموع
+              </div>
+
+              {/* Table Header Row */}
+              <div
+                style={{
+                  display: 'flex',
+                  background: '#334155',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 900,
+                }}
+              >
+                <div style={{ width: '50%', padding: '8px 14px', textAlign: 'right', borderLeft: '1px solid #475569' }}>
+                  المادة
+                </div>
+                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center', borderLeft: '1px solid #475569' }}>
+                  الدرجة
+                </div>
+                <div style={{ width: '25%', padding: '8px 14px', textAlign: 'center' }}>
+                  التقدير
+                </div>
+              </div>
+
+              {/* Excluded Subject Rows */}
+              <div
+                style={{
+                  border: '1px solid #999',
+                  borderTop: 'none',
+                  borderRadius: '0 0 8px 8px',
+                  overflow: 'hidden',
+                }}
+              >
+                {totals.excluded.map((item, i) => {
+                  const pct = getSubjectPct(item);
+                  const badge = item.isNum ? getGradeBadge(pct) : null;
+                  return (
+                    <div
+                      key={`exc-${i}`}
+                      style={{
+                        display: 'flex',
+                        borderBottom: i < totals.excluded.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        fontSize: '14px',
+                        background: '#fff',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '50%',
+                          padding: '10px 14px',
+                          color: '#334155',
+                          fontWeight: 900,
+                          textAlign: 'right',
+                          borderLeft: '1px solid #e5e7eb',
+                        }}
+                      >
+                        {item.clean}
+                      </div>
+                      <div
+                        style={{
+                          width: '25%',
+                          padding: '10px 14px',
+                          color: '#000',
+                          fontWeight: 900,
+                          textAlign: 'center',
+                          borderLeft: '1px solid #e5e7eb',
+                        }}
+                      >
+                        {formatScore(item)}
+                      </div>
+                      <div
+                        style={{
+                          width: '25%',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {badge ? (
+                          <span
+                            style={{
+                              background: badge.bg,
+                              color: '#fff',
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              fontSize: '11px',
+                              fontWeight: 900,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {badge.text}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '13px' }}>
+                            {item.rawScore}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ===== Disclaimer Footer ===== */}
+          <div style={{ padding: '16px 24px', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: 900,
+                color: '#000',
+                margin: 0,
+              }}
+            >
+              هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
+            </p>
+            <p
+              style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#555',
+                margin: '8px 0 0',
+                direction: 'ltr',
+              }}
+            >
+              Designed by : Mr.Mohamed Khairy
+            </p>
+          </div>
+        </div>
+
+        {/* ===== Print Button ===== */}
         <button
           onClick={handlePrint}
           style={{
-            marginTop: '15px',
+            marginTop: '12px',
             background: '#28a745',
             color: 'white',
             border: 'none',
-            padding: '15px',
+            padding: '14px',
             borderRadius: '10px',
             cursor: 'pointer',
-            fontSize: '18px',
+            fontSize: '16px',
             fontWeight: 'bold',
             width: '100%',
             transition: '0.3s',
@@ -246,7 +628,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         </button>
       </div>
 
-      {/* Extra Action Buttons (Copy, WhatsApp, New Search) - hidden from print */}
+      {/* ===== Extra Action Buttons (hidden from print) ===== */}
       <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <Button
           onClick={handleCopy}
@@ -274,11 +656,6 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           بحث جديد
         </Button>
       </div>
-
-      {/* Disclaimer */}
-      <p className="text-center text-xs font-bold text-gray-500 no-print" style={{ direction: 'rtl' }}>
-        * هذه النتيجة استرشادية ولا يعتد بها كمستند رسمي *
-      </p>
     </motion.div>
   );
 }
