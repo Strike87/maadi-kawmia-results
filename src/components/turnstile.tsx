@@ -18,14 +18,47 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
   useEffect(() => {
-    // Check if we have a real site key
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     const hasRealKey = !!(siteKey && siteKey !== '0x4AAAAAAA_your_site_key_here');
 
-    // If no real key, show the security label and auto-verify after short delay
     if (!hasRealKey) {
       setShowLabel(true);
     }
+
+    // Store interval IDs for cleanup
+    let pollIntervalId: ReturnType<typeof setInterval> | null = null;
+    let loadIntervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const doVerify = (token: string) => {
+      if (!verifiedRef.current) {
+        verifiedRef.current = true;
+        onVerifyRef.current(token);
+      }
+    };
+
+    const startPolling = () => {
+      let count = 0;
+      pollIntervalId = setInterval(() => {
+        if (verifiedRef.current) {
+          if (pollIntervalId) clearInterval(pollIntervalId);
+          return;
+        }
+        count++;
+        try {
+          const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
+          if (input && input.value && input.value.length > 10) {
+            doVerify(input.value);
+            if (pollIntervalId) clearInterval(pollIntervalId);
+          }
+        } catch (e) { /* ignore */ }
+        // Auto-verify after 5 seconds of polling
+        if (count > 25 && !verifiedRef.current) {
+          doVerify('auto-verified');
+          if (pollIntervalId) clearInterval(pollIntervalId);
+        }
+      }, 200);
+    };
 
     const renderWidget = () => {
       if (!containerRef.current || !window.turnstile) return;
@@ -33,12 +66,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       try {
         window.turnstile.render(containerRef.current, {
           sitekey: hasRealKey ? siteKey! : '1x00000000000000000000AA',
-          callback: (token: string) => {
-            if (!verifiedRef.current) {
-              verifiedRef.current = true;
-              onVerifyRef.current(token);
-            }
-          },
+          callback: (token: string) => doVerify(token),
           'expired-callback': () => {
             verifiedRef.current = false;
             onExpireRef.current();
@@ -48,67 +76,32 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
         });
       } catch (e) {
         console.error('Turnstile render error:', e);
-        if (!verifiedRef.current) {
-          verifiedRef.current = true;
-          onVerifyRef.current('fallback-token');
-        }
+        doVerify('fallback-token');
       }
-    };
-
-    // Poll for token in hidden input as fallback
-    let pollInterval: NodeJS.Timeout | null = null;
-    const startPolling = () => {
-      let count = 0;
-      pollInterval = setInterval(() => {
-        if (verifiedRef.current) {
-          if (pollInterval) clearInterval(pollInterval);
-          return;
-        }
-        count++;
-        const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
-        if (input && input.value && input.value.length > 10) {
-          verifiedRef.current = true;
-          onVerifyRef.current(input.value);
-          if (pollInterval) clearInterval(pollInterval);
-        }
-        // Auto-verify after 5 seconds
-        if (count > 25 && !verifiedRef.current) {
-          verifiedRef.current = true;
-          onVerifyRef.current('auto-verified');
-          if (pollInterval) clearInterval(pollInterval);
-        }
-      }, 200);
+      // Start polling after rendering
+      startPolling();
     };
 
     if (window.turnstile) {
       renderWidget();
-      startPolling();
     } else {
-      const loadInterval = setInterval(() => {
+      loadIntervalId = setInterval(() => {
         if (window.turnstile) {
-          clearInterval(loadInterval);
+          if (loadIntervalId) clearInterval(loadIntervalId);
           renderWidget();
-          startPolling();
         }
       }, 300);
 
-      const timeout = setTimeout(() => {
-        clearInterval(loadInterval);
-        if (!verifiedRef.current) {
-          verifiedRef.current = true;
-          onVerifyRef.current('auto-verified');
-        }
+      timeoutId = setTimeout(() => {
+        if (loadIntervalId) clearInterval(loadIntervalId);
+        doVerify('auto-verified');
       }, 8000);
-
-      return () => {
-        clearInterval(loadInterval);
-        clearTimeout(timeout);
-        if (pollInterval) clearInterval(pollInterval);
-      };
     }
 
     return () => {
-      if (pollInterval) clearInterval(pollInterval);
+      if (pollIntervalId) clearInterval(pollIntervalId);
+      if (loadIntervalId) clearInterval(loadIntervalId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
