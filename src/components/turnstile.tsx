@@ -13,6 +13,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   const onExpireRef = useRef(onExpire);
   const verifiedRef = useRef(false);
   const [showLabel, setShowLabel] = useState(false);
+  const [widgetError, setWidgetError] = useState(false);
 
   useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
   useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
@@ -25,7 +26,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       setShowLabel(true);
     }
 
-    // Store interval IDs for cleanup
+    // Store interval/timeout IDs for cleanup
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
     let loadIntervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -37,27 +38,22 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       }
     };
 
+    // Poll the hidden input for the real Turnstile response token.
+    // Only accepts REAL tokens from the widget — NO fake fallback tokens.
     const startPolling = () => {
-      let count = 0;
       pollIntervalId = setInterval(() => {
         if (verifiedRef.current) {
           if (pollIntervalId) clearInterval(pollIntervalId);
           return;
         }
-        count++;
         try {
           const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
-          if (input && input.value && input.value.length > 10) {
+          if (input && input.value && input.value.length > 20) {
             doVerify(input.value);
             if (pollIntervalId) clearInterval(pollIntervalId);
           }
-        } catch (e) { /* ignore */ }
-        // Auto-verify after 5 seconds of polling
-        if (count > 25 && !verifiedRef.current) {
-          doVerify('auto-verified');
-          if (pollIntervalId) clearInterval(pollIntervalId);
-        }
-      }, 200);
+        } catch { /* ignore */ }
+      }, 300);
     };
 
     const renderWidget = () => {
@@ -71,14 +67,20 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
             verifiedRef.current = false;
             onExpireRef.current();
           },
+          'error-callback': () => {
+            // Widget encountered an error — show message, don't generate fake token
+            setWidgetError(true);
+            return true; // Don't retry
+          },
           theme: 'light',
           size: 'normal',
         });
-      } catch (e) {
-        console.error('Turnstile render error:', e);
-        doVerify('fallback-token');
+      } catch {
+        // Render failed — show message, don't generate fake token
+        setWidgetError(true);
+        return;
       }
-      // Start polling after rendering
+      // Start polling for the real token
       startPolling();
     };
 
@@ -92,10 +94,14 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
         }
       }, 300);
 
+      // After 15 seconds, if Turnstile script still hasn't loaded,
+      // show an error instead of generating a fake token
       timeoutId = setTimeout(() => {
         if (loadIntervalId) clearInterval(loadIntervalId);
-        doVerify('auto-verified');
-      }, 8000);
+        if (!verifiedRef.current) {
+          setWidgetError(true);
+        }
+      }, 15000);
     }
 
     return () => {
@@ -105,13 +111,25 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     };
   }, []);
 
+  // Reset widget error state when component remounts
+  useEffect(() => {
+    verifiedRef.current = false;
+    setWidgetError(false);
+  }, []);
+
   return (
     <div className="flex flex-col items-center gap-2 min-h-[65px]">
       <div ref={containerRef} className="flex justify-center" />
-      {showLabel && (
+      {showLabel && !widgetError && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
           <span className="font-semibold">التحقق الأمني</span>
+        </div>
+      )}
+      {widgetError && (
+        <div className="flex items-center gap-2 text-sm text-amber-600">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span className="font-semibold">تعذر تحميل التحقق الأمني — يرجى إعادة تحميل الصفحة</span>
         </div>
       )}
     </div>
@@ -127,6 +145,7 @@ declare global {
           sitekey: string;
           callback: (token: string) => void;
           'expired-callback': () => void;
+          'error-callback'?: () => boolean;
           theme?: string;
           size?: string;
           dir?: string;
