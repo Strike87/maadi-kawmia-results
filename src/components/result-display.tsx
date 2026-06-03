@@ -165,9 +165,9 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
             {/* Table Header Row */}
             <div className="print-table-head flex bg-slate-700 dark:bg-slate-800 text-white text-[12px] font-black sm:text-[13px]">
-              <div className="flex-[3.5] py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
-              <div className="flex-[2.5] py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
-              <div className="flex-[6] py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
+              <div className="flex-1 py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
+              <div className="flex-1 py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
+              <div className="flex-1 py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
             </div>
 
             {/* Subject Rows */}
@@ -188,13 +188,13 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                       i < totals.included.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                     }`}
                   >
-                    <div className="flex-[3.5] py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
+                    <div className="flex-1 py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
                       {item.clean}
                     </div>
-                    <div className="flex-[2.5] py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
+                    <div className="flex-1 py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
                       {formatScore(item)}
                     </div>
-                    <div className="flex-[6] py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
+                    <div className="flex-1 py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
                       {grade ? (
                         <>
                           {/* Mobile: colored badge pill */}
@@ -227,13 +227,13 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                 className="print-total-row flex items-center text-white text-[12px] font-black sm:text-[14px]"
                 style={{ background: totalColor }}
               >
-                <div className="flex-[3.5] py-2.5 px-2 text-right border-l border-white/20 sm:px-4 sm:py-3">
+                <div className="flex-1 py-2.5 px-2 text-right border-l border-white/20 sm:px-4 sm:py-3">
                   المجموع الكلي
                 </div>
-                <div className="flex-[2.5] py-2.5 px-1.5 text-center border-l border-white/20 sm:px-3 sm:py-3 whitespace-nowrap font-black text-[14px] sm:text-[18px]">
+                <div className="flex-1 py-2.5 px-1.5 text-center border-l border-white/20 sm:px-3 sm:py-3 whitespace-nowrap font-black text-[14px] sm:text-[18px]">
                   {totals.totalDisplay} / {totals.totalMax}
                 </div>
-                <div className="flex-[6] py-1.5 px-2 flex items-center justify-center gap-1.5 sm:px-3 sm:gap-2">
+                <div className="flex-1 py-1.5 px-2 flex items-center justify-center gap-1.5 sm:px-3 sm:gap-2">
                   {/* Mobile: plain text */}
                   <span className="font-black text-[11px] sm:hidden">{totalLabel}</span>
                   <span className="text-white/80 text-[10px] font-black sm:hidden">{totals.totalPct}%</span>
@@ -270,9 +270,9 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                 مواد غير مضافة للمجموع
               </div>
               <div className="print-table-head flex bg-slate-700 dark:bg-slate-800 text-white text-[12px] font-black sm:text-[13px]">
-                <div className="flex-[3.5] py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
-                <div className="flex-[2.5] py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
-                <div className="flex-[6] py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
+                <div className="flex-1 py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
+                <div className="flex-1 py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
+                <div className="flex-1 py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
               </div>
               <div className="border border-slate-400 dark:border-border border-t-0 rounded-b-lg overflow-hidden">
                 {totals.excluded.map((item, i) => {
@@ -288,13 +288,13 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                         i < totals.excluded.length - 1 ? 'border-b border-slate-200 dark:border-border' : ''
                       }`}
                     >
-                      <div className="flex-[3.5] py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
+                      <div className="flex-1 py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-black text-right border-l border-slate-200 dark:border-border sm:px-4 sm:py-3 leading-tight">
                         {item.clean}
                       </div>
-                      <div className="flex-[2.5] py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
+                      <div className="flex-1 py-2.5 px-1.5 text-black dark:text-foreground font-black text-center border-l border-slate-200 dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
                         {formatScore(item)}
                       </div>
-                      <div className="flex-[6] py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
+                      <div className="flex-1 py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
                         {grade ? (
                           <>
                             <span
