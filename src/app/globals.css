@@ -261,17 +261,14 @@ select option {
   padding: 8px 12px;
 }
 
-/* Turnstile captcha — remove borders/outlines from the widget wrapper divs only */
-/* Only target the outer container divs, NOT the iframe internals (which would break the widget) */
+/* Turnstile captcha — clean up outer wrapper borders */
 .cf-turnstile-container > div {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  border-radius: 8px !important;
-  overflow: hidden !important;
 }
 
-/* Iframe itself — just remove any outer border/outline/shadow */
+/* Iframe itself — remove any outer border/outline/shadow */
 iframe[src*="challenges.cloudflare.com"] {
   border: none !important;
   outline: none !important;
