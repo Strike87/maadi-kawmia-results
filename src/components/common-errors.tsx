@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ChevronDown, HelpCircle } from 'lucide-react';
 
 interface ErrorEntry {
@@ -55,48 +54,37 @@ export function CommonErrors() {
         />
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-            animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="overflow-hidden"
-          >
-            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-xl overflow-hidden">
-              {ERRORS.map((err, index) => (
-                <div
-                  key={index}
-                  className={`p-4 ${
-                    index !== ERRORS.length - 1
-                      ? 'border-b border-border/30'
-                      : ''
-                  }`}
-                >
-                  {/* Error message badge */}
-                  <div className="flex items-start gap-2 mb-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm font-bold text-foreground bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
-                      {err.message}
-                    </span>
-                  </div>
-                  {/* Meaning */}
-                  <div className="mr-6 mb-1.5">
-                    <span className="text-xs font-bold text-muted-foreground">المعنى: </span>
-                    <span className="text-xs text-foreground/80">{err.meaning}</span>
-                  </div>
-                  {/* Fix */}
-                  <div className="mr-6">
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">الحل: </span>
-                    <span className="text-xs text-foreground/80">{err.fix}</span>
-                  </div>
+      {isOpen && (
+        <div className="animate-collapse animate-collapse-visible mt-2">
+          <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-xl overflow-hidden">
+            {ERRORS.map((err, index) => (
+              <div
+                key={index}
+                className={`p-4 ${
+                  index !== ERRORS.length - 1
+                    ? 'border-b border-border/30'
+                    : ''
+                }`}
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm font-bold text-foreground bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                    {err.message}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="mr-6 mb-1.5">
+                  <span className="text-xs font-bold text-muted-foreground">المعنى: </span>
+                  <span className="text-xs text-foreground/80">{err.meaning}</span>
+                </div>
+                <div className="mr-6">
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">الحل: </span>
+                  <span className="text-xs text-foreground/80">{err.fix}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

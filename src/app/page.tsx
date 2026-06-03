@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { SchoolHeader } from '@/components/school-header';
 import { SearchForm } from '@/components/search-form';
 import { ResultDisplay } from '@/components/result-display';
@@ -32,10 +31,6 @@ export default function HomePage() {
     setSearchError(errorMsg);
   };
 
-  // Determine which view to show:
-  // 1. Loading → show loading animation
-  // 2. Result → show result display
-  // 3. Default (search/error) → show search form
   const showLoading = isLoading && !result;
   const showResult = !isLoading && result !== null;
   const showSearch = !isLoading && result === null;
@@ -49,53 +44,33 @@ export default function HomePage() {
       >
         تخطي إلى المحتوى الرئيسي
       </a>
-      <main id="main-content" className="flex-1 w-full max-w-4xl mx-auto px-4 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-6">
+      <main id="main-content" className="flex-1 w-full max-w-4xl mx-auto px-5 py-5 sm:px-8 sm:py-8 space-y-4 sm:space-y-6">
         {/* Header */}
         <SchoolHeader />
 
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {showLoading && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LoadingAnimation />
-            </motion.div>
-          )}
+        {/* Content — CSS-only transitions */}
+        {showLoading && (
+          <div key="loading" className="animate-fadeIn">
+            <LoadingAnimation />
+          </div>
+        )}
 
-          {showSearch && (
-            <motion.div
-              key="search"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <SearchForm
-                onResult={handleResult}
-                onLoading={handleLoading}
-                onError={handleError}
-                initialError={searchError}
-              />
-            </motion.div>
-          )}
+        {showSearch && (
+          <div key="search" className="animate-fadeIn">
+            <SearchForm
+              onResult={handleResult}
+              onLoading={handleLoading}
+              onError={handleError}
+              initialError={searchError}
+            />
+          </div>
+        )}
 
-          {showResult && (
-            <motion.div
-              key="result"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ResultDisplay data={result} onNewSearch={handleNewSearch} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {showResult && (
+          <div key="result" className="animate-fadeIn">
+            <ResultDisplay data={result} onNewSearch={handleNewSearch} />
+          </div>
+        )}
 
       </main>
     </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Loader2,
@@ -221,12 +220,8 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
   const canSearch = isIdComplete && !!selectedGrade && !!selectedTerm && !!captchaToken;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-    >
-      <Card className="w-full max-w-lg mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
+    <div className="animate-fadeUp">
+      <Card className="w-full max-w-lg mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden" role="search" aria-label="البحث عن النتيجة">
         <CardHeader className="pb-3 sm:pb-4 px-5 sm:px-6">
           <CardTitle className="text-lg sm:text-xl font-bold text-center flex items-center justify-center gap-2">
             <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -235,40 +230,24 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-5 px-5 sm:px-6 pb-6">
           {/* Warning Alert */}
-          <AnimatePresence>
-            {warning && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm font-semibold">
-                    {warning}
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {warning && (
+            <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm font-semibold">
+                {warning}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Error Alert */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <Alert variant="destructive" className="border-red-300">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-sm font-bold">
-                    {error}
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {error && (
+            <Alert variant="destructive" className="border-red-300">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm font-bold" role="alert">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Term Select */}
           <div className="space-y-2">
@@ -402,13 +381,9 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               }`}
             />
             {idLength > 0 && !isIdComplete && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-xs text-amber-500 font-bold"
-              >
+              <p className="text-xs text-amber-500 font-bold animate-fadeIn">
                 الرقم القومي يجب أن يكون 14 رقماً
-              </motion.p>
+              </p>
             )}
           </div>
 
@@ -440,6 +415,6 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
 
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }
