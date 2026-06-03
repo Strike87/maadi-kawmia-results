@@ -1,74 +1,91 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface TurnstileProps {
   onVerify: (token: string) => void;
   onExpire: () => void;
 }
 
+const MAX_RETRIES = 3;
+
 export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
   const verifiedRef = useRef(false);
+  const widgetIdRef = useRef<string | null>(null);
   const [showLabel, setShowLabel] = useState(false);
   const [widgetError, setWidgetError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
 
   useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
   useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
-  // Detect dark mode for Turnstile widget theme
+  // Detect dark mode for Turnstile widget theme — store in ref to avoid
+  // destroying the widget on theme toggle; we reset() instead.
+  const isDarkRef = useRef(false);
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDark(mq.matches || document.documentElement.classList.contains('dark'));
+    const current = mq.matches || document.documentElement.classList.contains('dark');
+    isDarkRef.current = current;
+    setIsDark(current);
+
     const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      const now = document.documentElement.classList.contains('dark');
+      if (now !== isDarkRef.current) {
+        isDarkRef.current = now;
+        setIsDark(now);
+        // Instead of destroying & recreating, just reset the widget
+        // so it picks up the new theme on re-render
+        if (widgetIdRef.current && window.turnstile) {
+          try { window.turnstile.reset(widgetIdRef.current); } catch { /* ignore */ }
+        }
+      }
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
 
+  const doVerify = useCallback((token: string) => {
+    if (!verifiedRef.current) {
+      verifiedRef.current = true;
+      onVerifyRef.current(token);
+    }
+  }, []);
+
   useEffect(() => {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-    // No test sitekey fallback — only use the real key from environment
     const hasRealKey = !!(siteKey && siteKey !== '0x4AAAAAAA_your_site_key_here');
 
-    // In production, fail hard if no real key is configured
+    // In production, fail if no real key is configured
     if (!hasRealKey && process.env.NODE_ENV === 'production') {
       setWidgetError(true);
       return;
     }
 
-    // In development without a real key, skip captcha rendering entirely
-    // and auto-verify so development workflow isn't blocked
+    // In development without a real key, skip captcha and auto-verify
     if (!hasRealKey) {
       setShowLabel(true);
-      // Auto-verify in dev mode so the form can be tested
       onVerifyRef.current('dev-bypass-token');
       verifiedRef.current = true;
       return;
     }
 
-    // Store interval/timeout IDs for cleanup
+    // Reset state for this render cycle
+    verifiedRef.current = false;
+    setWidgetError(false);
+
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
     let loadIntervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let widgetId: string | null = null;
+    let cancelled = false;
 
-    const doVerify = (token: string) => {
-      if (!verifiedRef.current) {
-        verifiedRef.current = true;
-        onVerifyRef.current(token);
-      }
-    };
-
-    // Poll the hidden input for the real Turnstile response token.
-    // Only accepts REAL tokens from the widget — NO fake fallback tokens.
     const startPolling = () => {
       pollIntervalId = setInterval(() => {
-        if (verifiedRef.current) {
+        if (verifiedRef.current || cancelled) {
           if (pollIntervalId) clearInterval(pollIntervalId);
           return;
         }
@@ -83,10 +100,13 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     };
 
     const renderWidget = () => {
-      if (!containerRef.current || !window.turnstile) return;
+      if (!containerRef.current || !window.turnstile || cancelled) return;
+
+      // Clear previous widget content
       containerRef.current.innerHTML = '';
+
       try {
-        widgetId = window.turnstile.render(containerRef.current, {
+        const wid = window.turnstile.render(containerRef.current, {
           sitekey: siteKey!,
           callback: (token: string) => doVerify(token),
           'expired-callback': () => {
@@ -94,20 +114,24 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
             onExpireRef.current();
           },
           'error-callback': () => {
-            // Widget encountered an error — show message, don't generate fake token
-            setWidgetError(true);
-            return true; // Don't retry
+            // Return false to let Turnstile auto-retry internally
+            // Only set our error state if retries are exhausted
+            if (retryCountRef.current >= MAX_RETRIES) {
+              setWidgetError(true);
+            }
+            return false; // Allow Turnstile to retry
           },
-          theme: isDark ? 'dark' : 'light',
+          theme: isDarkRef.current ? 'dark' : 'light',
           appearance: 'always',
           size: 'normal',
         });
+        widgetIdRef.current = wid;
       } catch {
-        // Render failed — show message, don't generate fake token
-        setWidgetError(true);
+        if (retryCountRef.current >= MAX_RETRIES) {
+          setWidgetError(true);
+        }
         return;
       }
-      // Start polling for the real token
       startPolling();
     };
 
@@ -115,38 +139,48 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       renderWidget();
     } else {
       loadIntervalId = setInterval(() => {
+        if (cancelled) {
+          if (loadIntervalId) clearInterval(loadIntervalId);
+          return;
+        }
         if (window.turnstile) {
           if (loadIntervalId) clearInterval(loadIntervalId);
           renderWidget();
         }
       }, 300);
 
-      // After 15 seconds, if Turnstile script still hasn't loaded,
-      // show an error instead of generating a fake token
+      // After 20 seconds, if Turnstile script still hasn't loaded, show error
       timeoutId = setTimeout(() => {
         if (loadIntervalId) clearInterval(loadIntervalId);
-        if (!verifiedRef.current) {
+        if (!verifiedRef.current && !cancelled) {
           setWidgetError(true);
         }
-      }, 15000);
+      }, 20000);
     }
 
     return () => {
-      // Clean up widget
-      if (widgetId && window.turnstile) {
-        try { window.turnstile.remove(widgetId); } catch { /* ignore */ }
+      cancelled = true;
+      if (widgetIdRef.current && window.turnstile) {
+        try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
+        widgetIdRef.current = null;
       }
       if (pollIntervalId) clearInterval(pollIntervalId);
       if (loadIntervalId) clearInterval(loadIntervalId);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isDark]); // Added isDark to re-render widget on theme change
+  }, [retryCount, doVerify, isDark]); // Re-run on retry or theme change
 
-  // Reset widget error state when component remounts
-  useEffect(() => {
-    verifiedRef.current = false;
-    setWidgetError(false);
-  }, []);
+  // Manual retry handler
+  const handleRetry = () => {
+    retryCountRef.current += 1;
+    setRetryCount(prev => prev + 1);
+    // State reset happens in the effect above
+  };
+
+  // Full page reload as last resort
+  const handleReload = () => {
+    window.location.reload();
+  };
 
   return (
     <div className="flex flex-col items-center gap-2 min-h-[65px] w-full">
@@ -161,9 +195,27 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
         </div>
       )}
       {widgetError && (
-        <div className="flex items-center gap-2 text-sm text-amber-600">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span className="font-extrabold">تعذر تحميل التحقق الأمني — يرجى إعادة تحميل الصفحة</span>
+        <div className="flex flex-col items-center gap-2 text-sm text-amber-600">
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span className="font-extrabold">تعذر تحميل التحقق الأمني</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRetry}
+              className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-extrabold text-xs transition-colors"
+              type="button"
+            >
+              إعادة المحاولة
+            </button>
+            <button
+              onClick={handleReload}
+              className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-extrabold text-xs transition-colors"
+              type="button"
+            >
+              تحديث الصفحة
+            </button>
+          </div>
         </div>
       )}
     </div>
