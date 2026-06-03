@@ -261,18 +261,17 @@ select option {
   padding: 8px 12px;
 }
 
-/* Turnstile captcha — clean up outer wrapper borders */
+/* Turnstile captcha — hide the widget's own internal border since we have a custom outer border */
 .cf-turnstile-container > div {
   border: none !important;
-  outline: none !important;
   box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
-/* Iframe itself — remove any outer border/outline/shadow */
+/* Iframe itself — clean up any outer artifacts */
 iframe[src*="challenges.cloudflare.com"] {
   border: none !important;
   outline: none !important;
-  box-shadow: none !important;
 }
 
 /* Dark mode for native select */

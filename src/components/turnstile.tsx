@@ -132,8 +132,11 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 min-h-[65px] w-full">
-      {/* Overflow-hidden wrapper clips the Turnstile rectangle border into rounded shape */}
-      <div className="w-full flex justify-center overflow-hidden rounded-xl" style={{ maxWidth: '300px' }}>
+      {/* Bordered rectangle wrapper around the captcha widget */}
+      <div
+        className="cf-turnstile-border w-full flex justify-center items-center rounded-lg border-2 border-input bg-muted/30 p-2"
+        style={{ maxWidth: '302px', minHeight: '65px' }}
+      >
         <div
           ref={containerRef}
           className="cf-turnstile-container flex justify-center w-full"
