@@ -261,6 +261,15 @@ select option {
   padding: 8px 12px;
 }
 
+/* Turnstile captcha — remove default borders from widget container + iframe */
+[style*="cf-turnstile"],
+[id^="cf-turnstile"],
+iframe[src*="challenges.cloudflare.com"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Dark mode for native select */
 .dark select {
   background-color: var(--card);
