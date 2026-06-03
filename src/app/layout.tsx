@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Cairo } from 'next/font/google';
 import Script from 'next/script';
+import { headers } from 'next/headers';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -44,17 +45,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read CSP nonce from middleware (set via x-csp-nonce response header)
+  const headersList = await headers();
+  const cspNonce = headersList.get('x-csp-nonce') || undefined;
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"
+          nonce={cspNonce}
         />
       </head>
       <body

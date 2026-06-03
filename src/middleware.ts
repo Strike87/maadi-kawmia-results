@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// ─── Rate Limiter: Different limits per endpoint ───
-const API_RATE_LIMIT = 10;       // /api getStudentData: 10 req/min per IP
-const TERM_RATE_LIMIT = 30;      // /api getTermNames: 30 req/min per IP
-const WINDOW_MS = 60_000; // 1 minute
+// ─── Rate Limiter ───
+// NOTE: This in-memory Map is local to each Edge Function instance.
+// On Vercel, cold starts get a fresh map, so rate limits reset per-cold-start.
+// For production-grade distributed rate limiting, use Vercel KV or Upstash.
+// Current approach still provides meaningful protection for warm instances.
+const API_RATE_LIMIT = 15;       // /api: 15 req/min per IP (generous for families)
+const WINDOW_MS = 60_000;       // 1 minute
 
-const ipMap = new Map<string, { count: number; start: number; endpoint: string }>();
+const ipMap = new Map<string, { count: number; start: number }>();
 
-// Periodically clean up stale entries every 5 minutes
-setInterval(() => {
+// Clean up stale entries on each invocation instead of setInterval
+// (setInterval is unreliable in serverless Edge Functions)
+function cleanupStaleEntries() {
   const now = Date.now();
   for (const [key, entry] of ipMap.entries()) {
     if (now - entry.start > WINDOW_MS * 2) {
       ipMap.delete(key);
     }
   }
-}, 5 * 60_000);
+}
 
 function isRateLimited(ip: string, endpoint: string, limit: number): boolean {
   const key = `${ip}:${endpoint}`;
@@ -23,7 +27,7 @@ function isRateLimited(ip: string, endpoint: string, limit: number): boolean {
   const entry = ipMap.get(key);
 
   if (!entry || now - entry.start > WINDOW_MS) {
-    ipMap.set(key, { count: 1, start: now, endpoint });
+    ipMap.set(key, { count: 1, start: now });
     return false;
   }
 
@@ -65,9 +69,10 @@ function addSecurityHeaders(response: NextResponse, nonce?: string): NextRespons
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      // Use nonce if available, otherwise fall back to 'unsafe-inline' for dev
+      // Nonce-based CSP: 'strict-dynamic' allows scripts loaded by trusted scripts
+      // When nonce is present, browsers ignore 'self' and 'unsafe-inline' fallbacks (for CSP3+ browsers)
       nonce
-        ? `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`
+        ? `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:`
         : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
@@ -96,13 +101,18 @@ function getClientIP(request: NextRequest): string {
 }
 
 // ─── Generate CSP nonce ───
+// Uses Edge Runtime-compatible APIs only (no Buffer / Node.js)
 function generateNonce(): string {
-  // Simple base64 nonce for CSP (crypto.randomUUID is available in Edge Runtime)
-  return Buffer.from(crypto.randomUUID()).toString('base64');
+  const bytes = crypto.getRandomValues(new Uint8Array(18));
+  // btoa is available in Edge Runtime
+  return btoa(String.fromCharCode(...bytes));
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Clean up stale rate limit entries (replaces unreliable setInterval)
+  cleanupStaleEntries();
 
   // ─── Bot Protection — only block bad bots on pages ───
   const userAgent = request.headers.get('user-agent') || '';
@@ -129,10 +139,15 @@ export function middleware(request: NextRequest) {
 
   // ─── Add Security Headers + CSP nonce to all responses ───
   const nonce = generateNonce();
-  const response = NextResponse.next();
 
-  // Pass nonce to downstream via response header so layout.tsx can read it
-  response.headers.set('x-csp-nonce', nonce);
+  // Pass nonce to downstream via REQUEST header so server components can read it
+  // (headers() in server components reads request headers, not response headers)
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-csp-nonce', nonce);
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   return addSecurityHeaders(response, nonce);
 }

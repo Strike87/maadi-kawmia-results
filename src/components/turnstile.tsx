@@ -32,6 +32,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
 
   useEffect(() => {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    // No test sitekey fallback — only use the real key from environment
     const hasRealKey = !!(siteKey && siteKey !== '0x4AAAAAAA_your_site_key_here');
 
     // In production, fail hard if no real key is configured
@@ -40,8 +41,14 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       return;
     }
 
+    // In development without a real key, skip captcha rendering entirely
+    // and auto-verify so development workflow isn't blocked
     if (!hasRealKey) {
       setShowLabel(true);
+      // Auto-verify in dev mode so the form can be tested
+      onVerifyRef.current('dev-bypass-token');
+      verifiedRef.current = true;
+      return;
     }
 
     // Store interval/timeout IDs for cleanup
@@ -80,7 +87,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       containerRef.current.innerHTML = '';
       try {
         widgetId = window.turnstile.render(containerRef.current, {
-          sitekey: hasRealKey ? siteKey! : '1x00000000000000000000AA',
+          sitekey: siteKey!,
           callback: (token: string) => doVerify(token),
           'expired-callback': () => {
             verifiedRef.current = false;
