@@ -151,10 +151,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           isEven ? 'subject-row-even' : ''
         } ${!isLast ? 'border-b border-[#e5e7eb] dark:border-border' : ''}`}
       >
-        <div className={`${col.subject} ${cellPad} text-slate-600 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border leading-tight`} style={fz.row}>
+        <div className={`${col.subject} ${cellPad} text-slate-600 dark:text-muted-foreground font-semibold text-right border-l border-[#e5e7eb] dark:border-border leading-tight`} style={fz.row}>
           {item.clean}
         </div>
-        <div className={`${col.score} ${cellPad} text-black dark:text-foreground font-extrabold text-center border-l border-[#e5e7eb] dark:border-border whitespace-nowrap`} style={fz.score}>
+        <div className={`${col.score} ${cellPad} text-black dark:text-foreground font-bold text-center border-l border-[#e5e7eb] dark:border-border whitespace-nowrap`} style={fz.score}>
           {formatScore(item)}
         </div>
         <div className={`${col.grade} ${cellPad} flex items-center justify-center`}>
@@ -203,10 +203,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
                   className={`print-info-row flex ${idx < arr.length - 1 ? 'border-b border-[#e5e7eb] dark:border-border' : ''}`}
                   style={fz.row}
                 >
-                  <div className={`${col.subject} ${cellPad} text-slate-500 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border`}>
+                  <div className={`${col.subject} ${cellPad} text-slate-500 dark:text-muted-foreground font-semibold text-right border-l border-[#e5e7eb] dark:border-border`}>
                     {row.label}
                   </div>
-                  <div className={`w-[55%] ${cellPad} text-black dark:text-foreground font-extrabold text-right`} dir={row.dir} style={row.unicodeBidi ? { unicodeBidi: row.unicodeBidi } : undefined}>
+                  <div className={`w-[55%] ${cellPad} text-black dark:text-foreground font-bold text-right`} dir={row.dir} style={row.unicodeBidi ? { unicodeBidi: row.unicodeBidi } : undefined}>
                     {row.value}
                   </div>
                 </div>

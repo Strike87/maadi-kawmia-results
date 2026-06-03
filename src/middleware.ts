@@ -115,6 +115,13 @@ export function middleware(request: NextRequest) {
   // Clean up stale rate limit entries (replaces unreliable setInterval)
   cleanupStaleEntries();
 
+  // ─── Path traversal protection ───
+  // Block encoded/decoded path traversal attempts (e.g. /..%2F, /%2e%2e/)
+  const decodedPath = decodeURIComponent(pathname);
+  if (decodedPath.includes('..') || /\0/.test(decodedPath)) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   // ─── Bot Protection — only block bad bots on pages ───
   const userAgent = request.headers.get('user-agent') || '';
   if (isBadBot(userAgent) && !pathname.startsWith('/_next') && !pathname.startsWith('/api')) {

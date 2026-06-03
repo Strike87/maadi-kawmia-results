@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['800'],
+  weight: ['600', '700', '800'],
   variable: '--font-cairo',
   display: 'swap',
 });
@@ -18,7 +18,11 @@ const SITE_URL = 'https://maadi-kawmia-results.vercel.app';
 export const metadata: Metadata = {
   title: 'نتيجة الامتحانات - مدرسة حدائق المعادي القومية',
   description: 'استعلم عن نتيجة الامتحانات بالرقم القومي - مدرسة حدائق المعادي القومية',
-  keywords: ['نتيجة', 'امتحانات', 'مدرسة المعادي القومية', 'نتائج الطلاب'],
+  keywords: ['نتيجة', 'امتحانات', 'مدرسة المعادي القومية', 'نتائج الطلاب', 'نتيجة 2026'],
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: 'https://lh3.googleusercontent.com/d/1yZefhaGKwzF6d2Aglbju4i1QrFG1y3Ij',
   },
@@ -28,6 +32,7 @@ export const metadata: Metadata = {
     type: 'website',
     url: SITE_URL,
     siteName: 'مدرسة حدائق المعادي القومية',
+    locale: 'ar_EG',
     images: [
       {
         url: `${SITE_URL}/og-image.png`,
@@ -57,6 +62,10 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        {/* Preconnect to external domains for faster resource loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://challenges.cloudflare.com" />
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"

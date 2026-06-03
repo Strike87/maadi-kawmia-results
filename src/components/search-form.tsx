@@ -265,6 +265,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!termsLoaded}
+                aria-required="true"
                 className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
@@ -293,6 +294,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedTerm}
+                aria-required="true"
                 className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
@@ -320,6 +322,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedStage}
+                aria-required="true"
                 className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
@@ -333,7 +336,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
             </div>
             {selectedGrade && (
-              <p className="text-xs text-muted-foreground font-extrabold">
+              <p className="text-xs text-muted-foreground font-semibold">
                 {GRADE_MAP[selectedGrade]}
               </p>
             )}
@@ -371,6 +374,9 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !isLoading && canSearch) handleSearch();
               }}
+              aria-required="true"
+              aria-label="الرقم القومي"
+              autoComplete="off"
               className={`h-12 sm:h-12 text-sm sm:text-base text-left font-mono tracking-wider ${
                 idLength > 0 && !isIdComplete
                   ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/20'

@@ -193,13 +193,13 @@
   transform: scale(1.03);
 }
 
-/* ========== Grade Badge Styles — 800 for emphasis ========== */
+/* ========== Grade Badge Styles — 700 for emphasis ========== */
 .grade-badge-excellent {
   background: #dbeafe;
   color: #1e40af;
   padding: 3px 10px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -213,7 +213,7 @@
   color: #166534;
   padding: 3px 10px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -227,7 +227,7 @@
   color: #92400e;
   padding: 3px 10px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -241,7 +241,7 @@
   color: #991b1b;
   padding: 3px 10px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -543,6 +543,17 @@ iframe[src*="challenges.cloudflare.com"] {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ========== Focus Visible — Accessible keyboard focus ========== */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Remove default focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Subtle background — lets the card be the focus */

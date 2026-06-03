@@ -29,12 +29,12 @@ export function SchoolHeader() {
           >
             نتائج الامتحانات
           </h1>
-          <p className="font-extrabold text-muted-foreground leading-snug mt-0.5"
+          <p className="font-bold text-muted-foreground leading-snug mt-0.5"
             style={{ fontSize: 'clamp(10px, 3.3vw, 14px)' }}
           >
             مدرسة حدائق المعادي القومية
           </p>
-          <p className="font-extrabold text-primary leading-snug mt-0.5 truncate"
+          <p className="font-semibold text-primary leading-snug mt-0.5 truncate"
             style={{ fontSize: 'clamp(8px, 2.6vw, 12px)' }}
           >
             Hadayek El-Maadi El-Kawmia School
