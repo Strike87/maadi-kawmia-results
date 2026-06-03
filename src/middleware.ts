@@ -65,6 +65,9 @@ function addSecurityHeaders(response: NextResponse, nonce?: string): NextRespons
   // Removed deprecated X-XSS-Protection — CSP provides equivalent protection
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Cross-Origin isolation headers — prevent cross-origin information leakage
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set(
     'Content-Security-Policy',
     [
@@ -85,6 +88,7 @@ function addSecurityHeaders(response: NextResponse, nonce?: string): NextRespons
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
+      "upgrade-insecure-requests",
     ].join('; ')
   );
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');

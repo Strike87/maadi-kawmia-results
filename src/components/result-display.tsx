@@ -292,7 +292,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             <p className="font-bold text-slate-400 dark:text-muted-foreground" style={fz.disclaimer}>
               هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
             </p>
-            <p className="font-semibold text-slate-300 mt-1" dir="ltr" style={fz.credit}>
+            <p className="font-semibold text-slate-400 dark:text-muted-foreground mt-1" dir="ltr" style={fz.credit}>
               Designed by : Mr.Mohamed Khairy
             </p>
           </div>

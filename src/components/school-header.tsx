@@ -16,6 +16,7 @@ export function SchoolHeader() {
               alt="شعار مدرسة حدائق المعادي القومية"
               width={70}
               height={70}
+              sizes="70px"
               className="object-cover w-full h-full"
               priority
             />

@@ -23,8 +23,19 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  alternates: {
+    canonical: SITE_URL,
+  },
   icons: {
-    icon: 'https://lh3.googleusercontent.com/d/1yZefhaGKwzF6d2Aglbju4i1QrFG1y3Ij',
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
+  manifest: '/manifest.json',
+  other: {
+    'theme-color': '#2563eb',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'نتيجة المعادي القومية',
   },
   openGraph: {
     title: 'نتيجة الامتحانات - مدرسة حدائق المعادي القومية',
@@ -66,6 +77,9 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://challenges.cloudflare.com" />
+        {/* DNS prefetch for Cloudflare Turnstile API calls */}
+        <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
+        <meta name="theme-color" content="#2563eb" />
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"

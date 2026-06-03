@@ -183,10 +183,11 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 min-h-[65px] w-full">
+    <div className="flex flex-col items-center gap-2 min-h-[65px] w-full" aria-label="التحقق الأمني من Cloudflare">
       <div
         ref={containerRef}
         className="cf-turnstile-container flex justify-center w-full"
+        aria-label="تحقق كابتشا"
       />
       {showLabel && !widgetError && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

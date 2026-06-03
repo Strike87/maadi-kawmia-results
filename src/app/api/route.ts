@@ -24,14 +24,20 @@ function sanitizeString(value: unknown): string {
   return String(value || '').replace(/[<>"'&]/g, '');
 }
 
-// Sanitize GAS response — only allow whitelisted fields
+// Sanitize GAS response — only allow whitelisted fields, sanitize all string values
 function sanitizeResponse(data: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     if (ALLOWED_FIELDS.has(key)) {
-      // Sanitize string fields that will be displayed in the UI
-      if (key === 'stn') {
+      // Sanitize all string fields that could be displayed in the UI
+      // This protects against XSS if GAS data is compromised
+      if (typeof value === 'string') {
         sanitized[key] = sanitizeString(value);
+      } else if (Array.isArray(value)) {
+        // Sanitize arrays of strings (e.g. headers, scores)
+        sanitized[key] = value.map((item) =>
+          typeof item === 'string' ? sanitizeString(item) : item
+        );
       } else {
         sanitized[key] = value;
       }
@@ -93,6 +99,8 @@ async function verifyTurnstile(token: string, request: NextRequest): Promise<boo
           secret: TURNSTILE_SECRET_KEY,
           response: token,
           remoteip: clientIp,
+          // Idempotency key prevents token replay — derived from IP + token hash
+          idempotency_key: `${clientIp}-${token.slice(0, 10)}`,
         }),
       }
     );
@@ -197,10 +205,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Sanitize getTermNames response before sending to client
+      const sanitizedTerms = sanitizeResponse(data);
+
       // Cache getTermNames response for 5 minutes — this data rarely changes
-      return NextResponse.json(data, {
+      return NextResponse.json(sanitizedTerms, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }
