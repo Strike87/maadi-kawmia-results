@@ -151,8 +151,42 @@
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .animate-fadeUp {
   animation: fadeUp 0.4s ease forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Collapse animation for expandable sections */
+@keyframes collapse-in {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.animate-collapse {
+  animation: collapse-in 0.3s ease forwards;
+  overflow: hidden;
+}
+
+.animate-collapse-visible {
+  opacity: 1;
 }
 
 /* Subject row transitions */
