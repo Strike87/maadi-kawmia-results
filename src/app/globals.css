@@ -261,10 +261,31 @@ select option {
   padding: 8px 12px;
 }
 
-/* Turnstile captcha — remove default borders from widget container + iframe */
-[style*="cf-turnstile"],
-[id^="cf-turnstile"],
+/* Turnstile captcha — remove all borders, outlines, shadows from widget */
+/* Target the Turnstile container and ALL nested elements (div, iframe) */
+.cf-turnstile-wrapper,
+.cf-turnstile-wrapper *,
+.cf-turnstile-wrapper *::before,
+.cf-turnstile-wrapper *::after {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Also target the Turnstile auto-generated containers by known patterns */
+div[id^="cf-turnstile"],
+div[id^="cf-turnstile"] *,
+div[id^="cf-turnstile"] *::before,
+div[id^="cf-turnstile"] *::after,
 iframe[src*="challenges.cloudflare.com"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Turnstile widget can also appear inside a div with cf-turnstile class */
+.cf-turnstile,
+.cf-turnstile * {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
