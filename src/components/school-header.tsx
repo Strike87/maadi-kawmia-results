@@ -8,11 +8,11 @@ export function SchoolHeader() {
       role="banner"
     >
       <div className="glass-header flex items-center gap-2.5 sm:gap-3 border border-white/20 dark:border-white/10 rounded-3xl p-3 sm:p-3.5">
-        {/* Logo — use SVG (1KB) instead of PNG (96KB) for LCP */}
+        {/* Logo */}
         <div className="flex-shrink-0">
           <div className="h-[70px] w-[70px] rounded-xl overflow-hidden shadow-lg ring-2 ring-primary/20">
             <Image
-              src="/logo.svg"
+              src="/logo.png"
               alt="شعار مدرسة حدائق المعادي القومية"
               width={70}
               height={70}

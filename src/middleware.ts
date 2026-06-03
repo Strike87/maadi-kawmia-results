@@ -69,10 +69,11 @@ function addSecurityHeaders(response: NextResponse, nonce?: string): NextRespons
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      // Nonce-based CSP: 'strict-dynamic' allows scripts loaded by trusted scripts
-      // When nonce is present, browsers ignore 'self' and 'unsafe-inline' fallbacks (for CSP3+ browsers)
+      // Nonce for Turnstile script + 'self' for Next.js runtime + 'unsafe-inline' for Next.js hydration
+      // Note: 'unsafe-inline' is needed because Next.js injects inline scripts for React hydration
+      // that don't carry the nonce. The nonce still protects the Turnstile script specifically.
       nonce
-        ? `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:`
+        ? `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://challenges.cloudflare.com`
         : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
