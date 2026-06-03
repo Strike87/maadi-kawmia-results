@@ -1,15 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
 
-// Server-only: Google Apps Script endpoint — never exposed to client bundle
-const API_URL =
-  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
+// Server-only: Google Apps Script endpoint — loaded from env, never hardcoded in source
+const API_URL = process.env.GAS_API_URL || '';
 
 const GAS_API_KEY = process.env.GAS_API_KEY || '';
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Allowed fields to pass through from GAS response (whitelist for sanitization)
+const ALLOWED_FIELDS = new Set([
+  'termName', 'cl', 'clLabel', 'id', 'stn',
+  'headers', 'scores', 'maxScores', 'terms', 'activeSheets',
+]);
+
+// Sanitize a string value — strip potential XSS characters
+function sanitizeString(value: unknown): string {
+  return String(value || '').replace(/[<>"'&]/g, '');
+}
+
+// Sanitize GAS response — only allow whitelisted fields
+function sanitizeResponse(data: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (ALLOWED_FIELDS.has(key)) {
+      // Sanitize string fields that will be displayed in the UI
+      if (key === 'stn') {
+        sanitized[key] = sanitizeString(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+  }
+  return sanitized;
+}
+
+// Validate origin for defense-in-depth against CSRF
+function isValidOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  // Allow requests with no origin (mobile apps, curl, server-to-server)
+  if (!origin) return true;
+  // Must match our domain
+  return (
+    origin.endsWith('maadi-kawmia-results.vercel.app') ||
+    origin.startsWith('http://localhost:')
+  );
+}
 
 async function verifyTurnstile(token: string): Promise<boolean> {
   // Fail closed: if no secret key, CAPTCHA verification fails
@@ -48,12 +86,28 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // ── Origin validation (defense-in-depth) ──
+  if (!isValidOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { action, termName, cls, roll, captchaToken } = body;
 
     // ─── getTermNames ───
     if (action === 'getTermNames') {
+      if (!API_URL) {
+        console.error('GAS_API_URL env variable not set');
+        return NextResponse.json(
+          { error: getErrorMessage('SERVER_ERROR') },
+          { status: 500 }
+        );
+      }
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -149,6 +203,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (!API_URL) {
+        console.error('GAS_API_URL env variable not set');
+        return NextResponse.json(
+          { error: getErrorMessage('SERVER_ERROR') },
+          { status: 500 }
+        );
+      }
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -218,9 +280,6 @@ export async function POST(request: NextRequest) {
       }
 
       // ── Check for no-student result ──
-      // If the student name (stn) is missing, there is no valid result —
-      // regardless of whether headers/scores are present.
-      // GAS may return sheet structure even without a matching student.
       const stn = String(data.stn || '').trim();
       if (!stn) {
         return NextResponse.json(
@@ -229,7 +288,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(data);
+      // ── Sanitize response — only allow whitelisted fields ──
+      const sanitized = sanitizeResponse(data);
+
+      // ── Explicit no-store for PII protection ──
+      return NextResponse.json(sanitized, {
+        headers: {
+          'Cache-Control': 'private, no-store',
+        },
+      });
     }
 
     return NextResponse.json(

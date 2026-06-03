@@ -1,63 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// ─── Rate Limiter: 5 requests / minute per IP ───
-const RATE_LIMIT = 5;
+// ─── Rate Limiter: Different limits per endpoint ───
+const API_RATE_LIMIT = 10;       // /api getStudentData: 10 req/min per IP
+const TERM_RATE_LIMIT = 30;      // /api getTermNames: 30 req/min per IP
 const WINDOW_MS = 60_000; // 1 minute
 
-const ipMap = new Map<string, { count: number; start: number }>();
+const ipMap = new Map<string, { count: number; start: number; endpoint: string }>();
 
 // Periodically clean up stale entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, entry] of ipMap.entries()) {
+  for (const [key, entry] of ipMap.entries()) {
     if (now - entry.start > WINDOW_MS * 2) {
-      ipMap.delete(ip);
+      ipMap.delete(key);
     }
   }
 }, 5 * 60_000);
 
-function isRateLimited(ip: string): boolean {
+function isRateLimited(ip: string, endpoint: string, limit: number): boolean {
+  const key = `${ip}:${endpoint}`;
   const now = Date.now();
-  const entry = ipMap.get(ip);
+  const entry = ipMap.get(key);
 
   if (!entry || now - entry.start > WINDOW_MS) {
-    ipMap.set(ip, { count: 1, start: now });
+    ipMap.set(key, { count: 1, start: now, endpoint });
     return false;
   }
 
   entry.count++;
-  return entry.count > RATE_LIMIT;
+  return entry.count > limit;
 }
 
-// ─── Bot Detection ───
-const BOT_PATTERNS = [
-  /bot/i, /crawl/i, /spider/i, /scrape/i, /curl/i, /wget/i,
+// ─── Bot Detection — Whitelist legitimate crawlers for SEO ───
+const BAD_BOT_PATTERNS = [
+  /scrape/i, /curl/i, /wget/i,
   /python-requests/i, /httpclient/i, /java\//i, /node-fetch/i,
   /go-http/i, /php/i, /ruby/i, /semrush/i, /ahrefs/i,
   /majestic/i, /dotbot/i, /rogerbot/i, /exabot/i, /mj12bot/i,
 ];
 
-function isBot(userAgent: string): boolean {
+// Legitimate bots that should be allowed (SEO, social previews)
+const GOOD_BOT_PATTERNS = [
+  /googlebot/i, /bingbot/i, /yandexbot/i,
+  /twitterbot/i, /facebookexternalhit/i, /slackbot/i, /linkedinbot/i,
+  /applebot/i, /duckduckbot/i, /baiduspider/i,
+];
+
+function isBadBot(userAgent: string): boolean {
   if (!userAgent) return true; // No UA = suspicious
-  return BOT_PATTERNS.some((pattern) => pattern.test(userAgent));
+  // Allow known good bots
+  if (GOOD_BOT_PATTERNS.some((p) => p.test(userAgent))) return false;
+  // Block known bad bots
+  return BAD_BOT_PATTERNS.some((pattern) => pattern.test(userAgent));
 }
 
 // ─── Security Headers ───
-function addSecurityHeaders(response: NextResponse): NextResponse {
+function addSecurityHeaders(response: NextResponse, nonce?: string): NextResponse {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
+  // Removed deprecated X-XSS-Protection — CSP provides equivalent protection
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   response.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+      // Use nonce if available, otherwise fall back to 'unsafe-inline' for dev
+      nonce
+        ? `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`
+        : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https://lh3.googleusercontent.com",
-      "connect-src 'self' https://challenges.cloudflare.com https://script.google.com",
+      // Removed https://script.google.com — API proxies server-side, browser never connects directly
+      "connect-src 'self' https://challenges.cloudflare.com",
       "frame-src https://challenges.cloudflare.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -79,13 +95,18 @@ function getClientIP(request: NextRequest): string {
   );
 }
 
+// ─── Generate CSP nonce ───
+function generateNonce(): string {
+  // Simple base64 nonce for CSP (crypto.randomUUID is available in Edge Runtime)
+  return Buffer.from(crypto.randomUUID()).toString('base64');
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ─── Bot Protection ───
+  // ─── Bot Protection — only block bad bots on pages ───
   const userAgent = request.headers.get('user-agent') || '';
-  if (isBot(userAgent) && !pathname.startsWith('/_next') && !pathname.startsWith('/api')) {
-    // Allow bots on static assets but block them on pages
+  if (isBadBot(userAgent) && !pathname.startsWith('/_next') && !pathname.startsWith('/api')) {
     return new NextResponse(null, {
       status: 403,
       statusText: 'Forbidden - Bot Detected',
@@ -95,7 +116,10 @@ export function middleware(request: NextRequest) {
   // ─── Rate Limiting on API routes ───
   if (pathname.startsWith('/api')) {
     const ip = getClientIP(request);
-    if (isRateLimited(ip)) {
+
+    // We don't know the action yet from middleware, so use a combined limit
+    // The API route itself handles per-action logic
+    if (isRateLimited(ip, 'api', API_RATE_LIMIT)) {
       return NextResponse.json(
         { error: 'تم إرسال طلبات كثيرة في وقت قصير' },
         { status: 429 }
@@ -103,9 +127,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // ─── Add Security Headers to all responses ───
+  // ─── Add Security Headers + CSP nonce to all responses ───
+  const nonce = generateNonce();
   const response = NextResponse.next();
-  return addSecurityHeaders(response);
+
+  // Pass nonce to downstream via response header so layout.tsx can read it
+  response.headers.set('x-csp-nonce', nonce);
+
+  return addSecurityHeaders(response, nonce);
 }
 
 export const config = {

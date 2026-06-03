@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Loader2,
@@ -90,7 +90,8 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
   }, [terms, selectedTerm]);
 
   // ─── filterStages(): Only show stages that have at least 1 active grade ───
-  const getFilteredStages = useCallback(() => {
+  // Changed from useCallback to useMemo — the result is computed, not a function
+  const filteredStages = useMemo(() => {
     if (!activeSheets.length) return STAGE_GRADES;
     const filtered: Record<string, { label: string; grades: { value: string; label: string }[] }> = {};
     for (const [key, stage] of Object.entries(STAGE_GRADES)) {
@@ -101,8 +102,6 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
     }
     return filtered;
   }, [activeSheets]);
-
-  const filteredStages = getFilteredStages();
 
   // ─── loadGrades(): Only show grades that are active for the selected stage ───
   const currentStageGrades = selectedStage
@@ -223,7 +222,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
     <div className="animate-fadeUp">
       <Card className="w-full max-w-lg mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden" role="search" aria-label="البحث عن النتيجة">
         <CardHeader className="pb-3 sm:pb-4 px-5 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl font-bold text-center flex items-center justify-center gap-2">
+          <CardTitle className="text-lg sm:text-xl font-extrabold text-center flex items-center justify-center gap-2">
             <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <span>البحث عن النتيجة</span>
           </CardTitle>
@@ -233,7 +232,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
           {warning && (
             <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
               <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm font-semibold">
+              <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm font-extrabold">
                 {warning}
               </AlertDescription>
             </Alert>
@@ -243,7 +242,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
           {error && (
             <Alert variant="destructive" className="border-red-300">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm font-bold" role="alert">
+              <AlertDescription className="text-sm font-extrabold" role="alert">
                 {error}
               </AlertDescription>
             </Alert>
@@ -251,7 +250,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
 
           {/* Term Select */}
           <div className="space-y-2">
-            <Label htmlFor="term" className="text-sm font-bold flex items-center gap-1.5">
+            <Label htmlFor="term" className="text-sm font-extrabold flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
               الفترة الدراسية
             </Label>
@@ -266,7 +265,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!termsLoaded}
-                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
+                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر الفترة الدراسية --</option>
@@ -280,7 +279,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
 
           {/* Stage Select — filtered: only stages with active grades */}
           <div className="space-y-2">
-            <Label htmlFor="stage" className="text-sm font-bold flex items-center gap-1.5">
+            <Label htmlFor="stage" className="text-sm font-extrabold flex items-center gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 text-primary" />
               المرحلة الدراسية
             </Label>
@@ -294,7 +293,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedTerm}
-                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
+                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>-- اختر المرحلة الدراسية --</option>
@@ -308,7 +307,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
 
           {/* Grade Select — filtered: only active grades for selected stage */}
           <div className="space-y-2">
-            <Label htmlFor="grade" className="text-sm font-bold flex items-center gap-1.5">
+            <Label htmlFor="grade" className="text-sm font-extrabold flex items-center gap-1.5">
               <ChevronDown className="h-3.5 w-3.5 text-primary" />
               الصف الدراسي
             </Label>
@@ -321,7 +320,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
                   clearError();
                 }}
                 disabled={!selectedStage}
-                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-bold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
+                className="w-full h-12 sm:h-12 text-sm sm:text-base rounded-lg border border-input bg-transparent px-3 py-2 pr-3 pl-8 font-extrabold appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden text-ellipsis"
                 style={{ direction: 'rtl' }}
               >
                 <option value="" disabled>
@@ -334,7 +333,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
             </div>
             {selectedGrade && (
-              <p className="text-xs text-muted-foreground font-semibold">
+              <p className="text-xs text-muted-foreground font-extrabold">
                 {GRADE_MAP[selectedGrade]}
               </p>
             )}
@@ -343,12 +342,12 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
           {/* National ID Input */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="nationalId" className="text-sm font-bold flex items-center gap-1.5">
+              <Label htmlFor="nationalId" className="text-sm font-extrabold flex items-center gap-1.5">
                 <Hash className="h-3.5 w-3.5 text-primary" />
                 الرقم القومي
               </Label>
               <span
-                className={`text-xs font-bold transition-colors duration-300 ${
+                className={`text-xs font-extrabold transition-colors duration-300 ${
                   isIdComplete
                     ? 'text-emerald-500'
                     : idLength > 0
@@ -381,7 +380,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
               }`}
             />
             {idLength > 0 && !isIdComplete && (
-              <p className="text-xs text-amber-500 font-bold animate-fadeIn">
+              <p className="text-xs text-amber-500 font-extrabold animate-fadeIn">
                 الرقم القومي يجب أن يكون 14 رقماً
               </p>
             )}
@@ -397,7 +396,7 @@ export function SearchForm({ onResult, onLoading, onError, initialError = '' }: 
           <Button
             onClick={handleSearch}
             disabled={isLoading || !canSearch}
-            className="w-full h-13 text-base font-bold gap-2 rounded-xl bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-60 disabled:shadow-none"
+            className="w-full h-13 text-base font-extrabold gap-2 rounded-xl bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-60 disabled:shadow-none"
             size="lg"
           >
             {isLoading ? (

@@ -34,6 +34,12 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     const hasRealKey = !!(siteKey && siteKey !== '0x4AAAAAAA_your_site_key_here');
 
+    // In production, fail hard if no real key is configured
+    if (!hasRealKey && process.env.NODE_ENV === 'production') {
+      setWidgetError(true);
+      return;
+    }
+
     if (!hasRealKey) {
       setShowLabel(true);
     }
@@ -42,6 +48,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
     let loadIntervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let widgetId: string | null = null;
 
     const doVerify = (token: string) => {
       if (!verifiedRef.current) {
@@ -72,7 +79,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       if (!containerRef.current || !window.turnstile) return;
       containerRef.current.innerHTML = '';
       try {
-        window.turnstile.render(containerRef.current, {
+        widgetId = window.turnstile.render(containerRef.current, {
           sitekey: hasRealKey ? siteKey! : '1x00000000000000000000AA',
           callback: (token: string) => doVerify(token),
           'expired-callback': () => {
@@ -118,11 +125,15 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
     }
 
     return () => {
+      // Clean up widget
+      if (widgetId && window.turnstile) {
+        try { window.turnstile.remove(widgetId); } catch { /* ignore */ }
+      }
       if (pollIntervalId) clearInterval(pollIntervalId);
       if (loadIntervalId) clearInterval(loadIntervalId);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []);
+  }, [isDark]); // Added isDark to re-render widget on theme change
 
   // Reset widget error state when component remounts
   useEffect(() => {
@@ -139,13 +150,13 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       {showLabel && !widgetError && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
-          <span className="font-semibold">التحقق الأمني</span>
+          <span className="font-extrabold">التحقق الأمني</span>
         </div>
       )}
       {widgetError && (
         <div className="flex items-center gap-2 text-sm text-amber-600">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span className="font-semibold">تعذر تحميل التحقق الأمني — يرجى إعادة تحميل الصفحة</span>
+          <span className="font-extrabold">تعذر تحميل التحقق الأمني — يرجى إعادة تحميل الصفحة</span>
         </div>
       )}
     </div>

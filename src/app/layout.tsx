@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['700', '800'],
+  weight: ['800'],
   variable: '--font-cairo',
   display: 'swap',
 });
