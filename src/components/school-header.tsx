@@ -26,13 +26,13 @@ export function SchoolHeader() {
 
         {/* Text */}
         <div className="flex-1 min-w-0 text-right overflow-hidden">
-          <h1 className="text-base sm:text-lg font-black leading-tight text-foreground">
+          <h1 className="text-base sm:text-lg font-black leading-snug text-foreground">
             نتائج الامتحانات
           </h1>
-          <p className="text-[13px] sm:text-sm font-bold text-muted-foreground leading-tight">
+          <p className="text-[13px] sm:text-sm font-bold text-muted-foreground leading-snug mt-0.5">
             مدرسة حدائق المعادي القومية
           </p>
-          <p className="text-[11px] sm:text-xs font-semibold text-primary leading-tight truncate">
+          <p className="text-[11px] sm:text-xs font-semibold text-primary leading-snug mt-0.5 truncate">
             Hadayek El-Maadi El-Kawmia School
           </p>
         </div>
