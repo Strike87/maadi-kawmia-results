@@ -5,6 +5,7 @@ import { SchoolHeader } from '@/components/school-header';
 import { SearchForm } from '@/components/search-form';
 import { ResultDisplay } from '@/components/result-display';
 import { LoadingAnimation } from '@/components/loading-animation';
+import { CommonErrors } from '@/components/common-errors';
 import type { StudentResult } from '@/lib/constants';
 
 export default function HomePage() {
@@ -44,7 +45,7 @@ export default function HomePage() {
       >
         تخطي إلى المحتوى الرئيسي
       </a>
-      <main id="main-content" className="flex-1 w-full max-w-4xl mx-auto px-5 py-5 sm:px-8 sm:py-8 space-y-4 sm:space-y-6">
+      <main id="main-content" className="flex-1 w-full max-w-4xl mx-auto px-5 py-5 sm:px-8 sm:py-8 space-y-4 sm:space-y-6" aria-live="polite">
         {/* Header */}
         <SchoolHeader />
 
@@ -63,6 +64,7 @@ export default function HomePage() {
               onError={handleError}
               initialError={searchError}
             />
+            <CommonErrors />
           </div>
         )}
 

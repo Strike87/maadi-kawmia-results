@@ -18,6 +18,18 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
   useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
+  // Detect dark mode for Turnstile widget theme
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDark(mq.matches || document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     const hasRealKey = !!(siteKey && siteKey !== '0x4AAAAAAA_your_site_key_here');
@@ -72,7 +84,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
             setWidgetError(true);
             return true; // Don't retry
           },
-          theme: 'light',
+          theme: isDark ? 'dark' : 'light',
           size: 'normal',
         });
       } catch {

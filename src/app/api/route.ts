@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_URL, GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
+import { GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
+
+// Server-only: Google Apps Script endpoint — never exposed to client bundle
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
 
 const GAS_API_KEY = process.env.GAS_API_KEY || '';
 

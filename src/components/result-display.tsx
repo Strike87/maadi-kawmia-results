@@ -20,7 +20,7 @@ import {
   buildShareLines,
   GRADE_MAP,
 } from '@/lib/constants';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 interface ResultDisplayProps {
@@ -31,7 +31,7 @@ interface ResultDisplayProps {
 export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const [copied, setCopied] = useState(false);
   const adv = usesAdvancedScale(data);
-  const totals: ComputedTotals = computeTotals(data);
+  const totals: ComputedTotals = useMemo(() => computeTotals(data), [data]);
   const totalLabel = gradeLabel(totals.totalPct, adv);
   const totalColor = gradeColor(totals.totalPct, adv);
   const gradeText = data.clLabel || GRADE_MAP[data.cl] || data.cl;
@@ -98,7 +98,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 animate-fadeUp">
+    <div className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 animate-fadeUp" aria-live="polite">
       <div className="result-container">
         {/* ========== Result Card ========== */}
         <div className="print-result-card bg-white dark:bg-card rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#e5e7eb] dark:border-border/50">
@@ -108,7 +108,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
             <h2 className="text-base font-extrabold text-gray-900 dark:text-foreground leading-relaxed sm:text-xl">
               نتائج الامتحانات
             </h2>
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-muted-foreground mt-0.5 sm:text-sm" dir="ltr" style={{ textAlign: 'right' }}>
+            <p className="text-[12px] font-semibold text-slate-500 dark:text-muted-foreground mt-0.5 sm:text-sm" dir="ltr" style={{ textAlign: 'right' }}>
               Hadayek El-maadi El-kawmia school
             </p>
             <p className="text-sm font-bold text-black dark:text-foreground mt-0.5 sm:text-base">
@@ -308,10 +308,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
           {/* ===== Disclaimer Footer ===== */}
           <div className="print-disclaimer px-4 py-3 text-center sm:px-6 sm:py-4 border-t border-[#e5e7eb] dark:border-border/30 mt-2">
-            <p className="text-[11px] font-bold text-slate-400 dark:text-muted-foreground sm:text-xs">
+            <p className="text-[12px] font-bold text-slate-400 dark:text-muted-foreground sm:text-xs">
               هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
             </p>
-            <p className="text-[9px] font-semibold text-slate-300 mt-1 sm:text-[10px]" dir="ltr">
+            <p className="text-[10px] font-semibold text-slate-300 mt-1 sm:text-[11px]" dir="ltr">
               Designed by : Mr.Mohamed Khairy
             </p>
           </div>
@@ -319,7 +319,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
         {/* ===== Print Button (full width, on top) ===== */}
         <button
-          className="print-btn no-print btn-tap w-full mt-3 h-14 rounded-2xl text-white font-bold text-base cursor-pointer transition-all duration-200 hover:brightness-110 sm:mt-4"
+          className="print-btn no-print btn-tap w-full mt-3 h-14 rounded-2xl text-white font-bold text-base cursor-pointer transition-all duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-500 sm:mt-4"
           onClick={handlePrint}
           style={{ background: '#28a745' }}
           aria-label="طباعة شهادة النتيجة"

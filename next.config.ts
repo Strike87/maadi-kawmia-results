@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  poweredByHeader: false,
   // Hide detailed errors in production
   productionBrowserSourceMaps: false,
   images: {

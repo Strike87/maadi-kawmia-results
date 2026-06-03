@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Cairo } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '600', '700', '800', '900'],
+  weight: ['700', '800'],
   variable: '--font-cairo',
   display: 'swap',
 });
@@ -51,7 +52,10 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="lazyOnload"
+        />
       </head>
       <body
         className={`${cairo.variable} font-[family-name:var(--font-cairo)] antialiased bg-background text-foreground`}

@@ -192,19 +192,6 @@ export const EXCLUDED_SUBJECTS = [
 export const ADVANCED_STAGE_KEYS = new Set(['7', '8', '10', '11S', '11A']);
 
 // =====================================================
-// API Configuration
-// =====================================================
-
-export const API_URL =
-  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
-
-// Whether Turnstile captcha is configured (has a real site key)
-export const CAPTCHA_ENABLED =
-  typeof window !== 'undefined' &&
-  !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
-  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== '0x4AAAAAAA_your_site_key_here';
-
-// =====================================================
 // Type Definitions
 // =====================================================
 
@@ -336,16 +323,6 @@ export function gradeColor(pct: number, adv: boolean): string {
   if ((adv && pct >= 75) || pct >= 65) return '#16a34a';
   if (pct >= 50) return '#d9a400';
   return '#dc2626';
-}
-
-export type ThresholdClass = 'red' | 'yellow' | 'green' | 'blue';
-
-export function thresholdClass(pct: number, adv: boolean): ThresholdClass {
-  if (pct < 50) return 'red';
-  if (pct < 65) return 'yellow';
-  if (adv && pct < 75) return 'green';
-  if (pct < 85) return 'green';
-  return 'blue';
 }
 
 export function computeTotals(data: StudentResult): ComputedTotals {
