@@ -261,14 +261,7 @@ select option {
   padding: 8px 12px;
 }
 
-/* Turnstile captcha — hide the widget's own internal border since we have a custom outer border */
-.cf-turnstile-container > div {
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-
-/* Iframe itself — clean up any outer artifacts */
+/* Turnstile captcha — just clean up the iframe, let the widget's own border show naturally */
 iframe[src*="challenges.cloudflare.com"] {
   border: none !important;
   outline: none !important;
