@@ -22,15 +22,21 @@ export function SchoolHeader() {
           </div>
         </div>
 
-        {/* Text */}
+        {/* Text — shrinks to fit available width */}
         <div className="flex-1 min-w-0 text-right overflow-hidden">
-          <h1 className="text-base sm:text-lg font-extrabold leading-snug text-foreground">
+          <h1 className="font-extrabold leading-snug text-foreground"
+            style={{ fontSize: 'clamp(11px, 3.8vw, 18px)' }}
+          >
             نتائج الامتحانات
           </h1>
-          <p className="text-[13px] sm:text-sm font-extrabold text-muted-foreground leading-snug mt-0.5">
+          <p className="font-extrabold text-muted-foreground leading-snug mt-0.5"
+            style={{ fontSize: 'clamp(10px, 3.3vw, 14px)' }}
+          >
             مدرسة حدائق المعادي القومية
           </p>
-          <p className="text-[11px] sm:text-xs font-extrabold text-primary leading-snug mt-0.5 truncate">
+          <p className="font-extrabold text-primary leading-snug mt-0.5 truncate"
+            style={{ fontSize: 'clamp(8px, 2.6vw, 12px)' }}
+          >
             Hadayek El-Maadi El-Kawmia School
           </p>
         </div>
