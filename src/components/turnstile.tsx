@@ -85,7 +85,7 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
             return true; // Don't retry
           },
           theme: isDark ? 'dark' : 'light',
-          appearance: 'interaction-only',
+          appearance: 'always',
           size: 'normal',
         });
       } catch {
@@ -132,14 +132,10 @@ export function Turnstile({ onVerify, onExpire }: TurnstileProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 min-h-[65px] w-full">
-      {/* Outer wrapper clips any overflow/borders from the Turnstile widget */}
-      <div className="cf-turnstile-wrapper w-full flex justify-center overflow-hidden rounded-lg p-0 m-0" style={{ border: 'none', outline: 'none', boxShadow: 'none' }}>
-        <div
-          ref={containerRef}
-          className="flex justify-center w-full [&>*]:!border-0 [&>*]:!shadow-none [&>*]:!outline-none [&>*]:!ring-0 [&>*>*]:!border-0 [&>*>*]:!shadow-none [&>*>*]:!outline-none [&>*>*]:!ring-0 [&>*>*>*]:!border-0 [&>*>*>*]:!shadow-none [&>*>*>*]:!outline-none"
-          style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-        />
-      </div>
+      <div
+        ref={containerRef}
+        className="cf-turnstile-container flex justify-center w-full"
+      />
       {showLabel && !widgetError && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
