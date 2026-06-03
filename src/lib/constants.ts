@@ -196,7 +196,7 @@ export const ADVANCED_STAGE_KEYS = new Set(['7', '8', '10', '11S', '11A']);
 // =====================================================
 
 export const API_URL =
-  'https://script.google.com/macros/s/AKfycbw14UqwxrsY4bdaJOdlruK1Ik80vzgqqitmsQIvV9Z5VsVQuOq9ynqWq0AJLIgzDpUV/exec';
+  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
 
 // Whether Turnstile captcha is configured (has a real site key)
 export const CAPTCHA_ENABLED =

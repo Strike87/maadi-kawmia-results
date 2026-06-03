@@ -189,7 +189,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .dark .grade-badge-excellent {
@@ -203,7 +203,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .dark .grade-badge-good {
@@ -217,7 +217,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .dark .grade-badge-pass {
@@ -231,7 +231,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .dark .grade-badge-fail {

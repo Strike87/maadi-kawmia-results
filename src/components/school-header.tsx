@@ -17,12 +17,12 @@ export function SchoolHeader() {
         <div className="flex-shrink-0">
           <div className="h-[70px] w-[70px] rounded-xl overflow-hidden shadow-lg ring-2 ring-primary/20">
             <Image
-              src="https://lh3.googleusercontent.com/d/1yZefhaGKwzF6d2Aglbju4i1QrFG1y3Ij"
+              src="/logo.png"
               alt="شعار مدرسة حدائق المعادي القومية"
               width={70}
               height={70}
               className="object-cover w-full h-full"
-              unoptimized
+              priority
             />
           </div>
         </div>

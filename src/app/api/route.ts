@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
+import { API_URL, GRADE_MAP, getErrorMessage, mapGasError } from '@/lib/constants';
 
-const API_URL =
-  'https://script.google.com/macros/s/AKfycbyJnOsjfKBZgksLbOyP1kTspgp2_2BImhbVwcuQJoIgf7IFEpHGJ2oo7rrhRoYI1agGxw/exec';
-
-// ← نفس المفتاح في Google Apps Script setupProperties
-const API_KEY = 'mk-results-2026-secure-key-x9z7w4';
+const GAS_API_KEY = process.env.GAS_API_KEY || '';
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 async function verifyTurnstile(token: string): Promise<boolean> {
+  // Fail closed: if no secret key, CAPTCHA verification fails
   if (!TURNSTILE_SECRET_KEY) {
-    console.warn('TURNSTILE_SECRET_KEY not set — skipping captcha verification');
-    return true;
+    console.error('TURNSTILE_SECRET_KEY not set — captcha verification denied');
+    return false;
   }
 
   try {
@@ -81,7 +78,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(data);
+      // Cache getTermNames response for 5 minutes — this data rarely changes
+      return NextResponse.json(data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      });
     }
 
     // ─── getStudentData ───
@@ -118,19 +120,28 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // ── Verify Turnstile captcha ──
-      if (captchaToken) {
-        const isValid = await verifyTurnstile(captchaToken);
-        if (!isValid) {
-          return NextResponse.json(
-            { error: getErrorMessage('CAPTCHA_FAILED') },
-            { status: 403 }
-          );
-        }
-      } else if (TURNSTILE_SECRET_KEY) {
+      // ── Verify Turnstile captcha (REQUIRED — fail closed) ──
+      if (!captchaToken) {
         return NextResponse.json(
           { error: getErrorMessage('MISSING_CAPTCHA') },
           { status: 403 }
+        );
+      }
+
+      const isValidCaptcha = await verifyTurnstile(captchaToken);
+      if (!isValidCaptcha) {
+        return NextResponse.json(
+          { error: getErrorMessage('CAPTCHA_FAILED') },
+          { status: 403 }
+        );
+      }
+
+      // ── Validate API key is configured ──
+      if (!GAS_API_KEY) {
+        console.error('GAS_API_KEY env variable not set');
+        return NextResponse.json(
+          { error: getErrorMessage('SERVER_ERROR') },
+          { status: 500 }
         );
       }
 
@@ -142,7 +153,7 @@ export async function POST(request: NextRequest) {
           termName,
           cls,
           roll,
-          apiKey: API_KEY,
+          apiKey: GAS_API_KEY,
         }),
       });
 

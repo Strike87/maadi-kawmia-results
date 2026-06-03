@@ -21,7 +21,7 @@ import {
   buildShareLines,
   GRADE_MAP,
 } from '@/lib/constants';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 interface ResultDisplayProps {
@@ -61,6 +61,15 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
   const handlePrint = () => {
     window.print();
   };
+
+  // Update page title when results are shown
+  useEffect(() => {
+    const originalTitle = document.title;
+    document.title = `نتيجة ${data.stn} - المعادي القومية`;
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [data.stn]);
 
   // Helper: get grade info based on percentage
   const getGradeInfo = (pct: number): { bg: string; text: string; badgeClass: string } => {
@@ -336,6 +345,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           className="print-btn no-print btn-tap w-full mt-3 py-3.5 rounded-2xl text-white font-bold text-base cursor-pointer transition-all duration-300 hover:opacity-90 hover:shadow-lg sm:mt-4 sm:py-4 sm:text-lg"
           onClick={handlePrint}
           style={{ background: '#28a745' }}
+          aria-label="طباعة شهادة النتيجة"
         >
           <span className="flex items-center justify-center gap-2">
             <Printer className="h-5 w-5" />
@@ -349,6 +359,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         <Button
           onClick={handleCopy}
           variant="outline"
+          aria-label="نسخ النتيجة"
           className={`btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 transition-all duration-300 text-base sm:h-14 sm:text-lg ${
             copied ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : ''
           }`}
@@ -358,6 +369,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         </Button>
         <Button
           onClick={handleWhatsApp}
+          aria-label="مشاركة عبر واتساب"
           className="btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white text-base sm:h-14 sm:text-lg"
         >
           <MessageCircle className="h-5 w-5" />
@@ -365,6 +377,7 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         </Button>
         <Button
           onClick={onNewSearch}
+          aria-label="بحث عن نتيجة أخرى"
           className="btn-tap flex-1 h-14 rounded-2xl font-bold gap-2 text-white text-base sm:h-14 sm:text-lg"
           style={{ background: '#001d3d' }}
         >
