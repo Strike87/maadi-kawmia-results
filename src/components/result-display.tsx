@@ -23,6 +23,35 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from '@/hooks/use-toast';
 
+/* ── Shared clamp() font sizes for the result table ── */
+const fz = {
+  heading:   { fontSize: 'clamp(12px, 3.6vw, 20px)' },
+  subtext:   { fontSize: 'clamp(9px, 2.6vw, 13px)' },
+  term:      { fontSize: 'clamp(10px, 3vw, 15px)' },
+  sectionBar:{ fontSize: 'clamp(10px, 3vw, 15px)' },
+  subBar:    { fontSize: 'clamp(9px, 2.6vw, 13px)' },
+  tableHead: { fontSize: 'clamp(8px, 2.4vw, 12px)' },
+  row:       { fontSize: 'clamp(9px, 2.6vw, 13px)' },
+  score:     { fontSize: 'clamp(9px, 2.6vw, 13px)' },
+  badge:     { fontSize: 'clamp(7px, 2vw, 11px)' },
+  totalRow:  { fontSize: 'clamp(10px, 3vw, 14px)' },
+  totalScore:{ fontSize: 'clamp(11px, 3.4vw, 18px)' },
+  mobileBadge:{ fontSize: 'clamp(7px, 2vw, 11px)' },
+  pctText:   { fontSize: 'clamp(7px, 2vw, 11px)' },
+  disclaimer:{ fontSize: 'clamp(7px, 2vw, 12px)' },
+  credit:    { fontSize: 'clamp(6px, 1.8vw, 11px)' },
+} as const;
+
+/* ── Fixed column widths (percentage) for vertical alignment ── */
+const col = {
+  subject: 'w-[45%]',   // المادة — widest, subject names
+  score:   'w-[25%]',   // الدرجة — e.g. "15 / 20"
+  grade:   'w-[30%]',   // التقدير — badge or text
+} as const;
+
+/* ── Shared row cell classes (padding via clamp) ── */
+const cellPad = 'py-[clamp(6px,1.6vw,12px)] px-[clamp(4px,1vw,16px)]';
+
 interface ResultDisplayProps {
   data: StudentResult;
   onNewSearch: () => void;
@@ -61,16 +90,12 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     window.print();
   };
 
-  // Update page title when results are shown
   useEffect(() => {
     const originalTitle = document.title;
     document.title = `نتيجة ${data.stn} - المعادي القومية`;
-    return () => {
-      document.title = originalTitle;
-    };
+    return () => { document.title = originalTitle; };
   }, [data.stn]);
 
-  // Helper: get grade info based on percentage
   const getGradeInfo = (pct: number): { bg: string; text: string; badgeClass: string } => {
     if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات', badgeClass: 'grade-badge-excellent' };
     if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً', badgeClass: 'grade-badge-good' };
@@ -79,22 +104,64 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع', badgeClass: 'grade-badge-fail' };
   };
 
-  // Calculate subject percentage
   const getSubjectPct = (item: SubjectItem): number => {
     if (!item.isNum || item.maxScore === 0) return 0;
     return Math.round((item.score / item.maxScore) * 100);
   };
 
-  // Format score display
   const formatScore = (item: SubjectItem): string => {
-    if (item.isNum) {
-      return `${item.score} / ${item.maxScore}`;
-    }
+    if (item.isNum) return `${item.score} / ${item.maxScore}`;
     if (isAbsenceCode(item.rawScore)) {
       const raw = String(item.rawScore).trim();
       return raw === '' || raw === '-' ? '—' : raw;
     }
     return item.rawScore;
+  };
+
+  /* ── Reusable grade badge renderer ── */
+  const GradeBadge = ({ grade }: { grade: { bg: string; text: string; badgeClass: string } | null }) => {
+    if (!grade) return <span className="text-slate-400" style={fz.badge}>—</span>;
+    return (
+      <span
+        className="text-white py-[2px] px-[clamp(4px,1vw,12px)] rounded-full font-extrabold whitespace-nowrap print-badge"
+        style={{ background: grade.bg, ...fz.badge }}
+      >
+        {grade.text}
+      </span>
+    );
+  };
+
+  /* ── Reusable table header row ── */
+  const TableHeader = () => (
+    <div className="print-table-head flex bg-slate-700 dark:bg-slate-800 text-white font-bold">
+      <div className={`${col.subject} ${cellPad} text-right border-l border-slate-600`} style={fz.tableHead}>المادة</div>
+      <div className={`${col.score} ${cellPad} text-center border-l border-slate-600`} style={fz.tableHead}>الدرجة</div>
+      <div className={`${col.grade} ${cellPad} text-center`} style={fz.tableHead}>التقدير</div>
+    </div>
+  );
+
+  /* ── Reusable subject row ── */
+  const SubjectRow = ({ item, i, total, isLast }: { item: SubjectItem; i: number; total: number; isLast: boolean }) => {
+    const pct = getSubjectPct(item);
+    const grade = item.isNum ? getGradeInfo(pct) : null;
+    const isEven = i % 2 === 1;
+    return (
+      <div
+        className={`print-subject-row subject-row-transition flex items-center ${
+          isEven ? 'subject-row-even' : ''
+        } ${!isLast ? 'border-b border-[#e5e7eb] dark:border-border' : ''}`}
+      >
+        <div className={`${col.subject} ${cellPad} text-slate-600 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border leading-tight`} style={fz.row}>
+          {item.clean}
+        </div>
+        <div className={`${col.score} ${cellPad} text-black dark:text-foreground font-extrabold text-center border-l border-[#e5e7eb] dark:border-border whitespace-nowrap`} style={fz.score}>
+          {formatScore(item)}
+        </div>
+        <div className={`${col.grade} ${cellPad} flex items-center justify-center`}>
+          <GradeBadge grade={grade} />
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -104,144 +171,98 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         <div className="print-result-card bg-white dark:bg-card rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#e5e7eb] dark:border-border/50">
 
           {/* ===== Header Section ===== */}
-          <div className="print-header px-4 pt-3 pb-1.5 text-right sm:px-6 sm:pt-5 sm:pb-3">
-            <h2 className="text-base font-extrabold text-gray-900 dark:text-foreground leading-relaxed sm:text-xl">
+          <div className="print-header px-[clamp(12px,3vw,24px)] pt-[clamp(8px,2vw,20px)] pb-[clamp(4px,1vw,12px)] text-right">
+            <h2 className="font-extrabold text-gray-900 dark:text-foreground leading-relaxed" style={fz.heading}>
               نتائج الامتحانات
             </h2>
-            <p className="text-[12px] font-semibold text-slate-500 dark:text-muted-foreground mt-0.5 sm:text-sm" dir="ltr" style={{ textAlign: 'right' }}>
+            <p className="font-semibold text-slate-500 dark:text-muted-foreground mt-0.5" dir="ltr" style={{ textAlign: 'right', ...fz.subtext }}>
               Hadayek El-maadi El-kawmia school
             </p>
-            <p className="text-sm font-bold text-black dark:text-foreground mt-0.5 sm:text-base">
+            <p className="font-bold text-black dark:text-foreground mt-0.5" style={fz.term}>
               {data.termName || 'أخر العام 2026'}
             </p>
           </div>
 
           {/* ===== Student Data Section ===== */}
-          <div className="print-student-data px-5 mt-1.5 sm:px-6 sm:mt-2">
+          <div className="print-student-data px-[clamp(12px,3vw,24px)] mt-[clamp(4px,1vw,8px)]">
             {/* "بيانات الطالب" Header Bar */}
-            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-2 px-4 rounded-t-xl text-[13px] font-bold text-center sm:text-base sm:py-2.5 flex items-center justify-center gap-2">
+            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-[clamp(5px,1.4vw,10px)] px-4 rounded-t-xl font-bold text-center flex items-center justify-center gap-2" style={fz.sectionBar}>
               <span>👨‍🎓</span>
               <span>بيانات الطالب</span>
             </div>
 
-            {/* Student Info Rows */}
+            {/* Student Info Rows — label col matches subject col, value spans score+grade */}
             <div className="border border-[#e5e7eb] dark:border-border border-t-0 rounded-b-xl overflow-hidden">
-              <div className="print-info-row flex text-[13px] border-b border-[#e5e7eb] dark:border-border sm:text-sm">
-                <div className="w-[38%] py-2.5 px-3 text-slate-500 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border sm:py-3 sm:px-4">
-                  الصف الدراسي
+              {[
+                { label: 'الصف الدراسي', value: gradeText },
+                { label: 'الرقم القومي', value: data.id, dir: 'ltr' as const, unicodeBidi: 'embed' as const },
+                { label: 'اسم الطالب', value: data.stn },
+              ].map((row, idx, arr) => (
+                <div
+                  key={row.label}
+                  className={`print-info-row flex ${idx < arr.length - 1 ? 'border-b border-[#e5e7eb] dark:border-border' : ''}`}
+                  style={fz.row}
+                >
+                  <div className={`${col.subject} ${cellPad} text-slate-500 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border`}>
+                    {row.label}
+                  </div>
+                  <div className={`w-[55%] ${cellPad} text-black dark:text-foreground font-extrabold text-right`} dir={row.dir} style={row.unicodeBidi ? { unicodeBidi: row.unicodeBidi } : undefined}>
+                    {row.value}
+                  </div>
                 </div>
-                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-extrabold text-right sm:py-3 sm:px-4">
-                  {gradeText}
-                </div>
-              </div>
-              <div className="print-info-row flex text-[13px] border-b border-[#e5e7eb] dark:border-border sm:text-sm">
-                <div className="w-[38%] py-2.5 px-3 text-slate-500 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border sm:py-3 sm:px-4">
-                  الرقم القومي
-                </div>
-                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-extrabold text-right sm:py-3 sm:px-4" dir="ltr" style={{ unicodeBidi: 'embed' }}>
-                  {data.id}
-                </div>
-              </div>
-              <div className="print-info-row flex text-[13px] sm:text-sm">
-                <div className="w-[38%] py-2.5 px-3 text-slate-500 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border sm:py-3 sm:px-4">
-                  اسم الطالب
-                </div>
-                <div className="w-[62%] py-2.5 px-3 text-black dark:text-foreground font-extrabold text-right sm:py-3 sm:px-4">
-                  {data.stn}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* ===== Grades Section ===== */}
-          <div className="print-grades px-5 mt-2 sm:px-6 sm:mt-3">
+          <div className="print-grades px-[clamp(12px,3vw,24px)] mt-[clamp(6px,1.6vw,12px)]">
             {/* "درجات الطالب" Header Bar */}
-            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-2 px-4 rounded-t-xl text-[13px] font-bold text-center sm:text-base sm:py-2.5 flex items-center justify-center gap-2">
+            <div className="print-section-bar bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white py-[clamp(5px,1.4vw,10px)] px-4 rounded-t-xl font-bold text-center flex items-center justify-center gap-2" style={fz.sectionBar}>
               <span>📊</span>
               <span>درجات الطالب</span>
             </div>
 
             {/* "مواد مضافة للمجموع" Sub-header */}
-            <div className="print-sub-bar bg-slate-500 dark:bg-slate-600 text-white py-1.5 px-4 text-[13px] font-bold text-center sm:text-sm sm:py-2">
+            <div className="print-sub-bar bg-slate-500 dark:bg-slate-600 text-white py-[clamp(4px,1vw,8px)] px-4 font-bold text-center" style={fz.subBar}>
               مواد مضافة للمجموع
             </div>
 
-            {/* Table Header Row */}
-            <div className="print-table-head flex bg-slate-700 dark:bg-slate-800 text-white text-[12px] font-bold sm:text-[13px]">
-              <div className="flex-1 py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
-              <div className="flex-1 py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
-              <div className="flex-1 py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
-            </div>
+            {/* Table Header */}
+            <TableHeader />
 
             {/* Subject Rows */}
             <div className="border border-[#e5e7eb] dark:border-border border-t-0">
-              {totals.included.map((item, i) => {
-                const pct = getSubjectPct(item);
-                const grade = item.isNum ? getGradeInfo(pct) : null;
-                const isEven = i % 2 === 1;
-                return (
-                  <div
-                    key={`inc-${i}`}
-                    className={`print-subject-row subject-row-transition flex items-center text-[12px] sm:text-[13px] ${
-                      isEven ? 'subject-row-even' : ''
-                    } ${
-                      i < totals.included.length - 1 ? 'border-b border-[#e5e7eb] dark:border-border' : ''
-                    }`}
-                  >
-                    <div className="flex-1 py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border sm:px-4 sm:py-3 leading-tight">
-                      {item.clean}
-                    </div>
-                    <div className="flex-1 py-2.5 px-1.5 text-black dark:text-foreground font-extrabold text-center border-l border-[#e5e7eb] dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
-                      {formatScore(item)}
-                    </div>
-                    <div className="flex-1 py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
-                      {grade ? (
-                        <>
-                          <span className={`${grade.badgeClass} sm:hidden`}>
-                            {grade.text}
-                          </span>
-                          <span
-                            className="hidden sm:inline-block text-white py-1 px-3 rounded-full text-[11px] font-extrabold whitespace-nowrap print-badge"
-                            style={{ background: grade.bg }}
-                          >
-                            {grade.text}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-slate-400 text-[11px] sm:text-xs">{item.rawScore}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {totals.included.map((item, i) => (
+                <SubjectRow key={`inc-${i}`} item={item} i={i} total={totals.included.length} isLast={i === totals.included.length - 1} />
+              ))}
 
               {/* Total Row */}
               <div
-                className="print-total-row flex items-center text-white text-[12px] font-bold sm:text-[14px]"
-                style={{ background: totalColor }}
+                className="print-total-row flex items-center text-white font-bold"
+                style={{ background: totalColor, ...fz.totalRow }}
               >
-                <div className="flex-1 py-2.5 px-2 text-right border-l border-white/20 sm:px-4 sm:py-3">
+                <div className={`${col.subject} ${cellPad} text-right border-l border-white/20`}>
                   المجموع الكلي
                 </div>
-                <div className="flex-1 py-2.5 px-1.5 text-center border-l border-white/20 sm:px-3 sm:py-3 whitespace-nowrap font-extrabold text-[14px] sm:text-[18px]">
+                <div className={`${col.score} ${cellPad} text-center border-l border-white/20 whitespace-nowrap font-extrabold`} style={fz.totalScore}>
                   {totals.totalDisplay} / {totals.totalMax}
                 </div>
-                <div className="flex-1 py-1.5 px-2 flex items-center justify-center gap-1.5 sm:px-3 sm:gap-2">
-                  <span className="font-extrabold text-[11px] sm:hidden">{totalLabel}</span>
-                  <span className="text-white/80 text-[11px] font-bold sm:hidden">{totals.totalPct}%</span>
-                  <span className="hidden sm:inline-block bg-white/25 text-white py-0.5 px-3 rounded-full text-[12px] font-extrabold whitespace-nowrap print-badge">
+                <div className={`${col.grade} ${cellPad} flex items-center justify-center gap-1`}>
+                  <span
+                    className="bg-white/25 text-white py-[2px] px-[clamp(4px,1vw,12px)] rounded-full font-extrabold whitespace-nowrap print-badge"
+                    style={fz.badge}
+                  >
                     {totalLabel}
                   </span>
-                  <span className="hidden sm:inline text-white/90 text-[13px] font-extrabold">
+                  <span className="text-white/90 font-extrabold" style={fz.pctText}>
                     {totals.totalPct}%
                   </span>
-                  <span className="hidden sm:inline text-[14px]">🏆</span>
                 </div>
               </div>
             </div>
 
             {/* Percentage Bar — hidden in print */}
-            <div className="mt-2 px-1 sm:mt-2.5 print-percentage-bar">
+            <div className="mt-2 px-1 print-percentage-bar">
               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden sm:h-2">
                 <div
                   className="h-full rounded-full transition-[width] duration-1000 ease-out delay-500"
@@ -253,75 +274,35 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
 
           {/* ===== Excluded Subjects Section ===== */}
           {totals.excluded.length > 0 && (
-            <div className="print-excluded px-5 mt-2 sm:px-6 sm:mt-3">
-              <div className="print-sub-bar bg-slate-500 dark:bg-slate-600 text-white py-1.5 px-4 rounded-t-xl text-[13px] font-bold text-center sm:text-sm sm:py-2">
+            <div className="print-excluded px-[clamp(12px,3vw,24px)] mt-[clamp(6px,1.6vw,12px)]">
+              <div className="print-sub-bar bg-slate-500 dark:bg-slate-600 text-white py-[clamp(4px,1vw,8px)] px-4 rounded-t-xl font-bold text-center" style={fz.subBar}>
                 مواد غير مضافة للمجموع
               </div>
-              <div className="print-table-head flex bg-slate-700 dark:bg-slate-800 text-white text-[12px] font-bold sm:text-[13px]">
-                <div className="flex-1 py-1.5 px-2 text-right border-l border-slate-600 sm:px-4 sm:py-2">المادة</div>
-                <div className="flex-1 py-1.5 px-1.5 text-center border-l border-slate-600 sm:px-3 sm:py-2">الدرجة</div>
-                <div className="flex-1 py-1.5 px-2 text-center sm:px-3 sm:py-2">التقدير</div>
-              </div>
+              <TableHeader />
               <div className="border border-[#e5e7eb] dark:border-border border-t-0 rounded-b-xl overflow-hidden">
-                {totals.excluded.map((item, i) => {
-                  const pct = getSubjectPct(item);
-                  const grade = item.isNum ? getGradeInfo(pct) : null;
-                  const isEven = i % 2 === 1;
-                  return (
-                    <div
-                      key={`exc-${i}`}
-                      className={`print-subject-row subject-row-transition flex items-center text-[12px] sm:text-[13px] ${
-                        isEven ? 'subject-row-even' : ''
-                      } ${
-                        i < totals.excluded.length - 1 ? 'border-b border-[#e5e7eb] dark:border-border' : ''
-                      }`}
-                    >
-                      <div className="flex-1 py-2.5 px-2 text-slate-600 dark:text-muted-foreground font-bold text-right border-l border-[#e5e7eb] dark:border-border sm:px-4 sm:py-3 leading-tight">
-                        {item.clean}
-                      </div>
-                      <div className="flex-1 py-2.5 px-1.5 text-black dark:text-foreground font-extrabold text-center border-l border-[#e5e7eb] dark:border-border sm:px-3 sm:py-3 whitespace-nowrap">
-                        {formatScore(item)}
-                      </div>
-                      <div className="flex-1 py-1.5 px-2 flex items-center justify-center sm:px-3 sm:py-2">
-                        {grade ? (
-                          <>
-                            <span className={`${grade.badgeClass} sm:hidden`}>
-                              {grade.text}
-                            </span>
-                            <span
-                              className="hidden sm:inline-block text-white py-1 px-3 rounded-full text-[11px] font-extrabold whitespace-nowrap print-badge"
-                              style={{ background: grade.bg }}
-                            >
-                              {grade.text}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-slate-400 text-[11px] sm:text-xs">{item.rawScore}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {totals.excluded.map((item, i) => (
+                  <SubjectRow key={`exc-${i}`} item={item} i={i} total={totals.excluded.length} isLast={i === totals.excluded.length - 1} />
+                ))}
               </div>
             </div>
           )}
 
           {/* ===== Disclaimer Footer ===== */}
-          <div className="print-disclaimer px-4 py-3 text-center sm:px-6 sm:py-4 border-t border-[#e5e7eb] dark:border-border/30 mt-2">
-            <p className="text-[12px] font-bold text-slate-400 dark:text-muted-foreground sm:text-xs">
+          <div className="print-disclaimer px-[clamp(12px,3vw,24px)] py-[clamp(8px,2vw,16px)] text-center border-t border-[#e5e7eb] dark:border-border/30 mt-2">
+            <p className="font-bold text-slate-400 dark:text-muted-foreground" style={fz.disclaimer}>
               هذه النتيجة استرشادية فقط ولا تعتبر مستنداً رسمياً
             </p>
-            <p className="text-[10px] font-semibold text-slate-300 mt-1 sm:text-[11px]" dir="ltr">
+            <p className="font-semibold text-slate-300 mt-1" dir="ltr" style={fz.credit}>
               Designed by : Mr.Mohamed Khairy
             </p>
           </div>
         </div>
 
-        {/* ===== Print Button (full width, on top) ===== */}
+        {/* ===== Print Button ===== */}
         <button
-          className="print-btn no-print btn-tap w-full mt-3 h-14 rounded-2xl text-white font-bold text-base cursor-pointer transition-all duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-500 sm:mt-4"
+          className="print-btn no-print btn-tap w-full mt-3 rounded-2xl text-white font-bold cursor-pointer transition-all duration-200 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-500 sm:mt-4"
           onClick={handlePrint}
-          style={{ background: '#28a745' }}
+          style={{ background: '#28a745', height: 'clamp(44px,12vw,56px)', fontSize: 'clamp(13px,3.6vw,16px)' }}
           aria-label="طباعة شهادة النتيجة"
         >
           <span className="flex items-center justify-center gap-2">
@@ -331,13 +312,13 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         </button>
       </div>
 
-      {/* ===== Action Buttons (same height, row below print) ===== */}
+      {/* ===== Action Buttons ===== */}
       <div className="result-actions no-print flex gap-2.5 sm:gap-3">
         <Button
           onClick={onNewSearch}
           aria-label="بحث عن نتيجة أخرى"
-          className="btn-tap flex-1 h-12 rounded-2xl font-bold gap-2 text-white text-sm transition-all duration-200 hover:brightness-110 sm:h-12 sm:text-base"
-          style={{ background: '#001d3d' }}
+          className="btn-tap flex-1 rounded-2xl font-bold gap-2 text-white transition-all duration-200 hover:brightness-110"
+          style={{ background: '#001d3d', height: 'clamp(44px,12vw,48px)', fontSize: 'clamp(12px,3.2vw,16px)' }}
         >
           <Search className="h-4 w-4" />
           بحث جديد
@@ -345,7 +326,8 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
         <Button
           onClick={handleWhatsApp}
           aria-label="مشاركة عبر واتساب"
-          className="btn-tap flex-1 h-12 rounded-2xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white text-sm transition-all duration-200 sm:h-12 sm:text-base"
+          className="btn-tap flex-1 rounded-2xl font-bold gap-2 bg-green-500 hover:bg-green-600 text-white transition-all duration-200"
+          style={{ height: 'clamp(44px,12vw,48px)', fontSize: 'clamp(12px,3.2vw,16px)' }}
         >
           <MessageCircle className="h-4 w-4" />
           واتساب
@@ -354,9 +336,10 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
           onClick={handleCopy}
           variant="outline"
           aria-label="نسخ النتيجة"
-          className={`btn-tap flex-1 h-12 rounded-2xl font-bold gap-2 transition-all duration-200 text-sm sm:h-12 sm:text-base ${
+          className={`btn-tap flex-1 rounded-2xl font-bold gap-2 transition-all duration-200 ${
             copied ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : ''
           }`}
+          style={{ height: 'clamp(44px,12vw,48px)', fontSize: 'clamp(12px,3.2vw,16px)' }}
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? 'تم' : 'نسخ'}
