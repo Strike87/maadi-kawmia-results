@@ -100,13 +100,14 @@ export function ResultDisplay({ data, onNewSearch }: ResultDisplayProps) {
     if (pct >= 85) return { bg: '#2563eb', text: adv ? 'ممتاز' : 'يفوق التوقعات', badgeClass: 'grade-badge-excellent' };
     if (adv && pct >= 75) return { bg: '#16a34a', text: 'جيد جداً', badgeClass: 'grade-badge-good' };
     if (!adv && pct >= 65) return { bg: '#16a34a', text: 'يلبي التوقعات', badgeClass: 'grade-badge-good' };
-    if (pct >= 50) return { bg: '#d97706', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً', badgeClass: 'grade-badge-pass' };
+    if (pct >= 50) return { bg: '#d9a400', text: adv ? 'مقبول' : 'يلبي التوقعات أحياناً', badgeClass: 'grade-badge-pass' };
     return { bg: '#dc2626', text: adv ? 'دون المستوى' : 'أقل من المتوقع', badgeClass: 'grade-badge-fail' };
   };
 
   const getSubjectPct = (item: SubjectItem): number => {
     if (!item.isNum || item.maxScore === 0) return 0;
-    return Math.round((item.score / item.maxScore) * 100);
+    // Use exact percentage (1 decimal) — consistent with totalPct calculation
+    return Math.round((item.score / item.maxScore) * 1000) / 10;
   };
 
   const formatScore = (item: SubjectItem): string => {
