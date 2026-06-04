@@ -355,7 +355,9 @@ export function computeTotals(data: StudentResult): ComputedTotals {
   const totalDisplay = Number.isInteger(totalScore)
     ? String(totalScore)
     : totalScore.toFixed(2).replace(/\.?0+$/, '');
-  const totalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+  // Calculate exact percentage to 1 decimal place — no rounding to nearest integer
+  // This ensures 64.5% is graded correctly (not rounded to 65%)
+  const totalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 1000) / 10 : 0;
 
   return { included, excluded, totalScore, totalDisplay, totalMax, totalPct };
 }
